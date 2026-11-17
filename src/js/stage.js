@@ -5,13 +5,20 @@ import { getTheme, sceneColors, onThemeChange } from './theme.js';
 export const isMobile = () => window.matchMedia('(max-width: 768px), (pointer: coarse)').matches;
 export const prefersReducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+// Checked once per page; the probe context is released straight away so it doesn't count
+// against the browser's WebGL context limit.
+let webglOk = null;
 export function webglAvailable() {
+  if (webglOk !== null) return webglOk;
   try {
     const c = document.createElement('canvas');
-    return !!(window.WebGLRenderingContext && (c.getContext('webgl2') || c.getContext('webgl')));
+    const gl = window.WebGLRenderingContext && (c.getContext('webgl2') || c.getContext('webgl'));
+    webglOk = !!gl;
+    gl?.getExtension('WEBGL_lose_context')?.loseContext();
   } catch {
-    return false;
+    webglOk = false;
   }
+  return webglOk;
 }
 
 /** Static illustration shown when WebGL is unavailable, so no canvas is ever empty. */
@@ -224,11 +231,22 @@ const snapCache = new Map(); // "<key>:<theme>" -> urls
 const snapDefs = new Map(); // key -> { buildScene, shots, size }
 const snapOwner = new Map(); // url -> { key, index }
 
-export function renderSnapshots(key, buildScene, shots, size = 720) {
+/** Register how a product's photos are made, without rendering any yet. */
+export function defineSnapshots(key, buildScene, shots, size = 720) {
+  snapDefs.set(key, { buildScene, shots, size });
+}
+
+/**
+ * Renders product "photographs" on demand: only the shot indices asked for (default: all) are
+ * rendered, each once per theme, and cached. Returns an array with a URL for every rendered shot.
+ */
+export function renderSnapshots(key, buildScene, shots, size = 720, indices = null) {
   snapDefs.set(key, { buildScene, shots, size });
   const cacheKey = `${key}:${getTheme()}`;
-  if (snapCache.has(cacheKey)) return snapCache.get(cacheKey);
-  if (!webglAvailable()) return [];
+  const urls = snapCache.get(cacheKey) || [];
+  snapCache.set(cacheKey, urls);
+  const want = (indices || shots.map((_, i) => i)).filter((i) => i < shots.length && !urls[i]);
+  if (!want.length || !webglAvailable()) return urls;
   if (!snapRenderer) {
     snapRenderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
     snapRenderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -247,18 +265,19 @@ export function renderSnapshots(key, buildScene, shots, size = 720) {
   const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
   const ctx = buildScene(scene);
   snapRenderer.toneMappingExposure = scene.userData.exposure ?? 1;
-  const urls = shots.map((shot) => {
+  for (const i of want) {
+    const shot = shots[i];
     if (shot.setup) shot.setup(ctx);
     camera.position.set(...shot.position);
     camera.lookAt(new THREE.Vector3(...shot.target));
     snapRenderer.render(scene, camera);
-    return snapRenderer.domElement.toDataURL('image/jpeg', 0.86);
-  });
+    urls[i] = snapRenderer.domElement.toDataURL('image/jpeg', 0.86);
+    snapOwner.set(urls[i], { key, index: i });
+  }
   scene.traverse((o) => {
     if (o.geometry && !o.geometry.userData.shared) o.geometry.dispose(); // shared CAD geometry stays alive
+    if (o.material) [].concat(o.material).forEach((m) => m.dispose());
   });
-  snapCache.set(cacheKey, urls);
-  urls.forEach((u, index) => snapOwner.set(u, { key, index }));
   return urls;
 }
 
@@ -272,12 +291,19 @@ export function registerSnapshotPlaceholders(key, urls) {
  * every matching <img> on the page. Pass a key to refresh one product only.
  */
 export function refreshSnapshotImages(onlyKey) {
-  document.querySelectorAll('img').forEach((img) => {
-    const owner = snapOwner.get(img.getAttribute('src'));
-    if (!owner || (onlyKey && owner.key !== onlyKey)) return;
-    const def = snapDefs.get(owner.key);
-    if (!def) return;
-    const next = renderSnapshots(owner.key, def.buildScene, def.shots, def.size)[owner.index];
+  // Collect which shots are actually on the page and render just those (one scene build per product).
+  const imgs = [...document.querySelectorAll('img')]
+    .map((img) => ({ img, owner: snapOwner.get(img.getAttribute('src')) }))
+    .filter(({ owner }) => owner && (!onlyKey || owner.key === onlyKey) && snapDefs.has(owner.key));
+  const byKey = new Map();
+  imgs.forEach(({ owner }) => byKey.set(owner.key, new Set([...(byKey.get(owner.key) || []), owner.index])));
+  const rendered = new Map();
+  byKey.forEach((indices, key) => {
+    const def = snapDefs.get(key);
+    rendered.set(key, renderSnapshots(key, def.buildScene, def.shots, def.size, [...indices]));
+  });
+  imgs.forEach(({ img, owner }) => {
+    const next = rendered.get(owner.key)?.[owner.index];
     if (next) img.setAttribute('src', next);
   });
 }

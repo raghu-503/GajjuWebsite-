@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import {
   renderSnapshots,
+  defineSnapshots,
   registerSnapshotPlaceholders,
   refreshSnapshotImages,
 } from "./stage.js";
@@ -99,8 +100,8 @@ function placeholders(id, cfg) {
     loadGajjuAsset().then(
       (asset) => {
         loaded[id] = asset;
-        getProductImages(id); // render and register the real photos
-        refreshSnapshotImages(id);
+        defineSnapshots(id, (scene) => cfg.build(scene, asset), cfg.shots, 720);
+        refreshSnapshotImages(id); // renders only the photos currently on the page
       },
       (err) => {
         console.error(err);
@@ -117,10 +118,15 @@ function placeholders(id, cfg) {
   return cfg.placeholders;
 }
 
-export function getProductImages(id) {
+/**
+ * Product photos. `count` limits how many shots are needed (cards and thumbnails need only the
+ * first), so pages never render photos they don't show.
+ */
+export function getProductImages(id, count = Infinity) {
   const cfg = SHOTS[id];
   const product = getProduct(id);
   if (!cfg || !product) return [];
+  const indices = [...Array(Math.min(count, cfg.shots.length)).keys()];
   const urls =
     cfg.asset && !loaded[id]
       ? placeholders(id, cfg)
@@ -129,12 +135,13 @@ export function getProductImages(id) {
           cfg.asset ? (scene) => cfg.build(scene, loaded[id]) : cfg.build,
           cfg.shots,
           720,
+          indices,
         );
-  return urls.map((src, i) => ({
-    src,
+  return indices.map((i) => ({
+    src: urls[i],
     alt: `${product.name}, ${cfg.shots[i].alt}`,
   }));
 }
 
-export const getThumb = (id) => getProductImages(id)[0]?.src || "";
+export const getThumb = (id) => getProductImages(id, 1)[0]?.src || "";
 export { THREE };

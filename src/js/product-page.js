@@ -174,7 +174,7 @@ function render() {
       ? `<section class="pdp-sec related">
     <h2 class="pdp-h">Also available</h2>
     <a class="related__card" href="product.html?id=${other.id}">
-      <img src="${getProductImages(other.id)[0]?.src}" alt="${other.name}" />
+      <img src="${getProductImages(other.id, 1)[0]?.src}" alt="${other.name}" />
       <div>
         <span class="prod__tag"><b>${other.sku}</b>${other.categoryLabel}</span>
         <h3>${other.name}</h3>

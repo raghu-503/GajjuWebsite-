@@ -26,7 +26,7 @@ const CARD = {
 };
 
 export function productCard(p, { headingTag = 'h2' } = {}) {
-  const img = getProductImages(p.id)[0];
+  const img = getProductImages(p.id, 1)[0];
   const H = headingTag;
   const diy = p.category === 'diy';
   return `<article class="${CARD.root}" data-id="${p.id}">

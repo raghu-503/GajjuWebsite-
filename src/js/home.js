@@ -11,8 +11,23 @@ const site = initSite('home');
 
 const hero = initHeroScene(document.querySelector('[data-hero-stage]'), document.querySelector('[data-hero-labels]'));
 initShowcase(document.querySelector('#products'));
-initExplorer(document.querySelector('#explore'));
-initAssembly(document.querySelector('#assembly'));
+// Below-the-fold 3D sections start their WebGL renderers only when they come within a viewport
+// of the screen, so the page loads with just the hero renderer.
+function whenNear(el, init) {
+  if (!el) return;
+  if (!('IntersectionObserver' in window)) return init(el);
+  const io = new IntersectionObserver(
+    (entries) => {
+      if (!entries.some((e) => e.isIntersecting)) return;
+      io.disconnect();
+      init(el);
+    },
+    { rootMargin: '100% 0px' }
+  );
+  io.observe(el);
+}
+whenNear(document.querySelector('#explore'), initExplorer);
+whenNear(document.querySelector('#assembly'), initAssembly);
 initLearn(document.querySelector('#learn'));
 
 // Hero title is split now but revealed after the loader.

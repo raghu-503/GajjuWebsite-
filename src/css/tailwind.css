@@ -1,0 +1,52 @@
+/* ==========================================================================
+   Tailwind CSS v4 entry (imported first in js/main.js, so it fixes the layer order).
+
+   - No Preflight: the site keeps its own base styles (global.css, in @layer base),
+     so migrating to Tailwind doesn't shift any spacing or typography.
+   - Utilities live in @layer utilities. Unlayered rules always beat layered ones, so
+     when a component moves to utilities, its old custom CSS rules must be removed.
+   - Colours, radii, type steps and easing map to the existing CSS variables
+     (@theme inline), so every utility follows the light/dark theme automatically.
+   - Custom CSS stays for: Three.js stages, keyframes, scroll-driven effects, the
+     loader/curtain/cursor, and other effects that are impractical as utilities.
+   ========================================================================== */
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+/* Scan the site's HTML and JS templates for class names. */
+@source "../";
+
+/* Dark theme is switched with <html data-theme="dark"> (js/theme.js). */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+@theme inline {
+  --font-sans: var(--font);
+
+  --color-bg: var(--black);
+  --color-fg: var(--white);
+  --color-surface: var(--char);
+  --color-raised: var(--char-2);
+  --color-chip: var(--char-3);
+  --color-soft: var(--text-soft);
+  --color-muted: var(--muted);
+  --color-dim: var(--dim);
+  --color-accent: var(--cyan);
+  --color-on-accent: var(--on-accent);
+  --color-brand-blue: var(--blue);
+  --color-ok: var(--ok);
+  --color-err: var(--err);
+  --color-line: var(--line);
+  --color-line-2: var(--line-2);
+
+  --text-step-0: var(--step-0);
+  --text-step-1: var(--step-1);
+  --text-step-2: var(--step-2);
+  --text-step-3: var(--step-3);
+
+  --radius-field: var(--r-sm);
+  --radius-card: var(--r-md);
+  --radius-panel: var(--r-lg);
+
+  --ease-site: var(--ease);
+}

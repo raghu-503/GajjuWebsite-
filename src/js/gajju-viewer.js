@@ -263,9 +263,12 @@ export function createGajjuViewer(host, opts = {}) {
     return explodedBounds;
   }
 
+  let destroyed = false;
+  let ro = null;
   const ready = loadGajjuAsset().then(
     (asset) => {
       offProgress();
+      if (destroyed) return null;
       model = createGajju(asset, { shadows: true });
       scene.add(model.group);
       applyExplode(model.parts, ex.v);
@@ -275,7 +278,7 @@ export function createGajjuViewer(host, opts = {}) {
         camera.position.copy(shot.position);
         controls.target.copy(shot.target);
       }
-      new ResizeObserver(() => {
+      ro = new ResizeObserver(() => {
         // Keep the model framed on layout changes until the visitor moves the camera.
         if (controls.userMoved) return;
         frame(true);
@@ -294,6 +297,7 @@ export function createGajjuViewer(host, opts = {}) {
     },
     (err) => {
       offProgress();
+      if (destroyed) return null;
       console.error(err);
       status.classList.add("is-error");
       statusText.textContent = `${err.message} Check that public/models/gajju2_robot.glb is deployed with the site.`;
@@ -395,6 +399,17 @@ export function createGajjuViewer(host, opts = {}) {
       tip.hidden = true;
       showPanel(selected);
       onSelect(selected);
+    },
+    /** Remove the canvas, controls and overlay UI, and stop every listener and tween. */
+    destroy() {
+      destroyed = true;
+      offProgress();
+      clearTimeout(resume);
+      ro?.disconnect();
+      gsap.killTweensOf([ex, camera.position, controls.target]);
+      controls.dispose();
+      stage.dispose();
+      [status, tools, panel, tip].forEach((el) => el?.remove());
     },
     /** Highlight every part of a kit component kind (null clears). */
     highlightKind(kind) {

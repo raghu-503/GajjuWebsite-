@@ -1,8 +1,8 @@
 # Gajju — Robotics website prototype
 
 A complete frontend prototype for a robotics brand: cinematic landing page, interactive 3D
-robots, DIY kit exploration, shop, product pages, cart and checkout. HTML, CSS and vanilla
-JavaScript (ES modules) with Three.js, GSAP + ScrollTrigger, Lenis and Lucide, served by Vite.
+robots, DIY kit exploration, shop, product pages, cart and checkout. A React 18 single-page app
+(React Router) with Three.js, GSAP + ScrollTrigger, Lenis and Lucide, built with Vite.
 
 ## Run it
 
@@ -20,18 +20,20 @@ npm run build      # outputs to /dist
 npm run preview    # serves /dist at http://localhost:4173
 ```
 
-The build uses relative paths, so `/dist` can be hosted from any folder or static host.
+It is a single-page app: the host must serve `index.html` for unknown paths (an "SPA fallback",
+e.g. Netlify `_redirects`, Vercel rewrites). `vite` and `vite preview` already do this.
+Old URLs such as `product.html?id=GAJJU` redirect to the new routes.
 Fonts load from Google Fonts (Archivo); offline, the site falls back to system fonts.
 
 ## Pages
 
 | Page                                  | What it does                                                                                                                      |
 | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `index.html`                          | Hero with 3D robot, brand intro, capabilities, product showcase, 3D explorer, 7-step assembly, learning centre, about and contact |
-| `shop.html`                           | Category tabs, filter, sort, image galleries, quantity, add to cart, comparison table (`?cat=assembled` or `?cat=diy`)            |
-| `product.html?id=aru-1` / `?id=rbk-2` | 3D viewer with zoom, gallery, specs, included items, kit component breakdown, reviews (you can post one), related product         |
-| `cart.html`                           | Quantities, remove, clear, promo codes, shipping progress                                                                         |
-| `checkout.html`                       | Validated form, shipping method, demo card / UPI / bank transfer, order confirmation (`?order=NX-…` reopens it)                   |
+| `/`                                   | Hero with 3D robot, brand intro, capabilities, product showcase, 3D explorer, 7-step assembly, learning centre, about and contact |
+| `/shop`                               | Category tabs, filter, sort, image galleries, quantity, add to cart, comparison table             |
+| `/product/GAJJU` / `/product/GAJJU-kit` | 3D viewer with zoom, gallery, specs, included items, kit component breakdown, reviews (you can post one), related product         |
+| `/cart`                               | Quantities, remove, clear, promo codes, shipping progress                                                                         |
+| `/checkout`                           | Validated form, shipping method, demo card / UPI / bank transfer, order confirmation (`?order=GJ-…` reopens it)                   |
 
 ## Demo data to try
 
@@ -48,37 +50,32 @@ under the `Gajju:` prefix. Clear site data to reset.
 
 ```
 src/
-  index.html  shop.html  product.html  cart.html  checkout.html
-  css/
-    global.css        tokens, type, buttons, forms, loader, cursor
-    navigation.css    header, mobile menu, drawers, search, toasts, footer
-    home.css          landing page sections
-    products.css      shop, compare table, product detail
-    commerce.css      cart page, checkout, confirmation
-    animations.css    keyframes, reveal defaults, reduced motion
-    responsive.css    breakpoints at 1180 / 960 / 640 px
-  js/
-    main.js           shared bootstrap for every page
-    layout.js         header, drawers, footer markup
-    navigation.js     panels, active indicator, search, account, newsletter
-    animations.js     Lenis, loader, page transitions, cursor, text reveals
-    stage.js          Three.js renderer setup, auto-pausing render loop, WebGL fallback, snapshots
-    robot-model.js    procedural ARU-1 and RBK-2 models, explode/highlight helpers, GLB loader
-    three-scene.js    hero scene
-    robot-explorer.js 3D explorer
-    assembly.js       step-by-step build
-    products.js       product viewers, galleries, home showcase
-    product-images.js studio "photos" rendered from the 3D models
-    learn.js          lessons and lesson dialog
-    cart.js           cart state, totals, promos
-    cart-ui.js        drawer, cart lines, add-to-cart buttons
-    summary.js        order summary + promo form (cart and checkout)
-    home.js  shop.js  product-page.js  cart-page.js  checkout.js   page entries
-    data.js           all product, component, review, lesson and step data
-    storage.js  icons.js  toast.js  ui.js  component-icons.js
+  index.html          single HTML shell (#root) + no-flash theme script
+  main.jsx            entry: global CSS, BrowserRouter
+  App.jsx             routes (+ redirects from the old *.html URLs)
+  pages/              Home, Shop, Product, Cart, Checkout
+  components/
+    Layout.jsx        app shell: loader, curtain transitions, Lenis, panels, keyboard, toasts
+    layout/           Header, MobileMenu, CartDrawer, SearchPanel, AccountPanel, Toasts, Footer
+    home/             Explorer, Assembly, Lessons (3D + UI sections of the home page)
+    ProductCard, CartLine, OrderSummary, SplitText, Stars, Icon, Logo, ComponentIcon
+  context/            SiteContext (lenis, loaded, open panel, go(to))
+  hooks/              useCart, useProductImages, useReveals, useAddToCart, useWhenNear, …
+  css/                unchanged stylesheets (tokens, layout, pages, animations, breakpoints)
+  js/                 framework-free modules used by the components:
+    data.js  cart.js  storage.js  theme.js  toast.js  animations.js
+    stage.js  gajju-model.js  robot-model.js  product-images.js
+    three-scene.js    hero scene            (initHeroScene → { playIntro, destroy })
+    robot-explorer.js 3D explorer controller (createExplorer → { selectGroup, …, destroy })
+    assembly.js       build-guide controller (createAssembly → { goTo, destroy })
+    gajju-viewer.js   product 3D viewer      (createGajjuViewer → { …, destroy })
 public/
-  models/  images/    put real assets here
+  models/             gajju2_robot.glb
 ```
+
+The Three.js modules stay imperative; React components mount them in effects and call
+`destroy()` on unmount, so navigating between routes releases every WebGL context,
+ScrollTrigger and listener.
 
 ## Swapping in real 3D models
 

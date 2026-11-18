@@ -1,5 +1,5 @@
 // Light (cream) is the default theme; visitors can switch to dark and the choice is remembered.
-// The initial theme is applied by a tiny inline script in each page's <head> to avoid a flash.
+// The initial theme is applied by a tiny inline script in index.html's <head> to avoid a flash.
 import { load, save } from './storage.js';
 
 const KEY = 'theme';
@@ -36,7 +36,6 @@ export function setTheme(theme) {
   document.documentElement.dataset.theme = t;
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', META_COLOR[t]);
   save(KEY, t);
-  updateToggles();
   window.dispatchEvent(new CustomEvent(EVENT, { detail: { theme: t } }));
 }
 
@@ -47,20 +46,8 @@ export function onThemeChange(cb) {
   return () => window.removeEventListener(EVENT, handler);
 }
 
-function updateToggles() {
-  const next = getTheme() === 'dark' ? 'light' : 'dark';
-  document.querySelectorAll('[data-theme-toggle]').forEach((btn) => {
-    btn.setAttribute('aria-label', `Switch to ${next} theme`);
-    btn.setAttribute('title', `Switch to ${next} theme`);
-  });
-}
-
 export function initTheme() {
   // The inline head script normally did this already; repeat in case it was missing.
   document.documentElement.dataset.theme = load(KEY, 'light') === 'dark' ? 'dark' : 'light';
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', META_COLOR[getTheme()]);
-  updateToggles();
-  document.addEventListener('click', (e) => {
-    if (e.target.closest('[data-theme-toggle]')) setTheme(getTheme() === 'dark' ? 'light' : 'dark');
-  });
 }

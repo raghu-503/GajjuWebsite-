@@ -223,20 +223,21 @@ export function initHeroScene(container, labelsRoot) {
 
   // Mouse parallax
   const mouse = { x: 0, y: 0, tx: 0, ty: 0 };
-  if (!mobile) {
-    window.addEventListener("pointermove", (e) => {
-      mouse.tx = (e.clientX / innerWidth) * 2 - 1;
-      mouse.ty = (e.clientY / innerHeight) * 2 - 1;
-    });
-  }
+  const onPointer = (e) => {
+    mouse.tx = (e.clientX / innerWidth) * 2 - 1;
+    mouse.ty = (e.clientY / innerHeight) * 2 - 1;
+  };
+  if (!mobile) window.addEventListener("pointermove", onPointer);
 
   // Intro animation
   const intro = { v: reduced ? 1 : 0 };
   holder.position.y = reduced ? 0 : -0.6;
 
   let introWanted = false;
+  let destroyed = false;
   loadGajjuAsset().then(
     (asset) => {
+      if (destroyed) return;
       robot = createGajju(asset, { shadows: true, rig: true });
       holder.add(robot.group);
       if (introWanted) runIntro();
@@ -574,7 +575,7 @@ export function initHeroScene(container, labelsRoot) {
   // Stop rendering once the capabilities section has scrolled away (restart when scrolling back).
   const hideAfter =
     reduced || !introSection ? heroEl : capsSection || introSection;
-  ScrollTrigger.create({
+  const hideST = ScrollTrigger.create({
     trigger: hideAfter,
     start: "top bottom",
     end: "bottom top",
@@ -814,6 +815,17 @@ export function initHeroScene(container, labelsRoot) {
     playIntro() {
       if (robot) runIntro();
       else introWanted = true;
+    },
+    /** Tear everything down (called when the home page unmounts). */
+    destroy() {
+      destroyed = true;
+      window.removeEventListener("resize", layout);
+      window.removeEventListener("pointermove", onPointer);
+      hideST.kill();
+      gsap.killTweensOf([intro, holder.rotation]);
+      heroEl?.classList.remove("hero--robot-front");
+      capVisuals.forEach((el) => (el.style.opacity = ""));
+      stage.dispose();
     },
   };
 

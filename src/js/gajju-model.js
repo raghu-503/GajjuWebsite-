@@ -15,8 +15,11 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { Reflector } from "three/examples/jsm/objects/Reflector.js";
 
-export const GAJJU_URL = new URL("models/gajju2_robot.glb", document.baseURI)
-  .href;
+// Resolved from the app's base URL (not the page URL), so it works on every route.
+export const GAJJU_URL = new URL(
+  `${import.meta.env.BASE_URL}models/gajju2_robot.glb`,
+  location.origin,
+).href;
 
 /** Target length (nose to tail) of the robot in scene units. The CAD model is 327 mm long. */
 const SCENE_LENGTH = 2.9;

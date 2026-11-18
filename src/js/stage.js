@@ -159,7 +159,9 @@ export function createStage(container, opts = {}) {
       document.removeEventListener('visibilitychange', onVis);
       offTheme();
       tickers.clear();
+      visible = false;
       renderer.dispose();
+      renderer.forceContextLoss(); // free the WebGL context (browsers cap how many can be live)
       canvas.remove();
     },
   };

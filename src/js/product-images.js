@@ -8,6 +8,7 @@ import {
 import { applyExplode } from "./robot-model.js";
 import { loadGajjuAsset, createGajju, addGajjuStudio } from "./gajju-model.js";
 import { getProduct } from "./data.js";
+import { onThemeChange } from "./theme.js";
 
 /** Studio "photographs" rendered from the real GAJJU CAD model. Cached per page load. */
 function buildGajjuScene(scene, asset) {
@@ -90,8 +91,20 @@ const svgUrl = (label, i) =>
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 720"><!--${i}--><defs><radialGradient id="g" cx="50%" cy="45%"><stop offset="0" stop-color="#13233a"/><stop offset="1" stop-color="#060b13"/></radialGradient></defs><rect width="720" height="720" fill="url(#g)"/><text x="360" y="372" fill="#8fa3b8" font-family="Archivo, system-ui, sans-serif" font-size="26" text-anchor="middle">${label}</text></svg>`,
   );
 
+const CHANGE = "nx:product-images";
+/** Subscribe to "photos changed" (model loaded, or re-rendered for a new theme). */
+export function onProductImagesChange(cb) {
+  window.addEventListener(CHANGE, cb);
+  const offTheme = onThemeChange(cb);
+  return () => {
+    window.removeEventListener(CHANGE, cb);
+    offTheme();
+  };
+}
+
 const loaded = {};
 function placeholders(id, cfg) {
+  if (cfg.failed) return cfg.failed;
   if (!cfg.placeholders) {
     cfg.placeholders = cfg.shots.map((_, i) =>
       svgUrl("Loading GAJJU CAD model…", `${id}-${i}`),
@@ -102,16 +115,14 @@ function placeholders(id, cfg) {
         loaded[id] = asset;
         defineSnapshots(id, (scene) => cfg.build(scene, asset), cfg.shots, 720);
         refreshSnapshotImages(id); // renders only the photos currently on the page
+        window.dispatchEvent(new Event(CHANGE));
       },
       (err) => {
         console.error(err);
-        const failed = cfg.shots.map((_, i) =>
+        cfg.failed = cfg.shots.map((_, i) =>
           svgUrl("GAJJU model failed to load", `${id}-${i}`),
         );
-        document.querySelectorAll("img").forEach((img) => {
-          const i = cfg.placeholders.indexOf(img.getAttribute("src"));
-          if (i >= 0) img.setAttribute("src", failed[i]);
-        });
+        window.dispatchEvent(new Event(CHANGE));
       },
     );
   }

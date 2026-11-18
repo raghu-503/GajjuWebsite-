@@ -1,12 +1,13 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
+import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 
-const r = (p) => resolve(__dirname, 'src', p);
-
 export default defineConfig({
-  base: './',
-  plugins: [tailwindcss()],
+  // Single-page React app: every route is served by src/index.html. Hosts need an SPA
+  // fallback (serve index.html for unknown paths); `vite` and `vite preview` do this already.
+  base: '/',
+  plugins: [react(), tailwindcss()],
   root: 'src',
   publicDir: resolve(__dirname, 'public'),
   server: { port: 5173, open: true },
@@ -14,14 +15,5 @@ export default defineConfig({
     outDir: resolve(__dirname, 'dist'),
     emptyOutDir: true,
     chunkSizeWarningLimit: 1200,
-    rollupOptions: {
-      input: {
-        index: r('index.html'),
-        shop: r('shop.html'),
-        product: r('product.html'),
-        cart: r('cart.html'),
-        checkout: r('checkout.html'),
-      },
-    },
   },
 });

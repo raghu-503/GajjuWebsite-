@@ -1,4 +1,6 @@
-// "Every component has a purpose": inspect the real GAJJU CAD assembly part by part.
+// "Every component has a purpose": 3D controller for inspecting the real GAJJU CAD assembly.
+// The surrounding UI (group list, info panel, toolbar) is rendered by components/home/Explorer.jsx;
+// this module owns the canvas, camera, picking and highlights, and reports back through callbacks.
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { createStage, prefersReducedMotion } from "./stage.js";
@@ -12,7 +14,7 @@ import {
 } from "./gajju-model.js";
 import { gsap } from "./animations.js";
 
-const GROUP_DESC = {
+export const GROUP_DESC = {
   torso:
     "The aluminium-look torso shell: body, deck, hump cap, clamps, battery door, tail plug and speaker ring.",
   electronics:
@@ -29,24 +31,22 @@ const GROUP_DESC = {
   trunk:
     "Three trunk links on a root spool, ending in a servo-driven two-jaw gripper.",
 };
+export { GROUPS };
 const pad = (n, l = 3) => String(n).padStart(l, "0");
 
-export function initExplorer(root) {
-  const host = root.querySelector("[data-explorer-stage]");
-  const list = root.querySelector("[data-explorer-list]");
-  const tip = root.querySelector("[data-explorer-tip]");
-  const idx = root.querySelector("[data-ex-idx]");
-  const nameEl = root.querySelector("[data-ex-name]");
-  const descEl = root.querySelector("[data-ex-desc]");
+/**
+ * @param {HTMLElement} host  element the canvas fills
+ * @param {object} cb
+ *   tip         element used as the hover tooltip
+ *   onReady(groups)       [{ id, label, count }] once the model has loaded
+ *   onError(message)      WebGL unavailable or the model failed to load
+ *   onSelect(info|null)   { idx, name, desc, group } for the panel
+ *   onHover(groupId|null) group highlighted from the 3D view or the list
+ */
+export function createExplorer(host, cb = {}) {
+  const { tip, onReady = () => {}, onError = () => {}, onSelect = () => {}, onHover = () => {} } = cb;
   const reduced = prefersReducedMotion();
   const dur = (d) => (reduced ? 0.01 : d);
-
-  const status = document.createElement("div");
-  status.className = "gstage__status";
-  status.setAttribute("role", "status");
-  status.innerHTML =
-    '<span class="gstage__spinner" aria-hidden="true"></span><span>Loading GAJJU CAD model…</span>';
-  host.appendChild(status);
 
   const stage = createStage(host, {
     fov: 34,
@@ -56,11 +56,8 @@ export function initExplorer(root) {
     envIntensity: 0.6,
   });
   if (!stage) {
-    status.classList.add("is-error");
-    status.lastElementChild.textContent =
-      "This browser cannot display 3D (WebGL is unavailable), so the GAJJU model cannot be shown.";
-    root.querySelector(".explorer__tools")?.remove();
-    return;
+    onError("This browser cannot display 3D (WebGL is unavailable), so the GAJJU model cannot be shown.");
+    return null;
   }
   const { scene, camera, canvas, renderer, mobile } = stage;
   const studio = addGajjuStudio(scene, { renderer, mobile, radius: 2.2 });
@@ -74,14 +71,16 @@ export function initExplorer(root) {
   controls.enableZoom = false; // enabled once the visitor engages, so page scroll isn't hijacked
   controls.autoRotate = !reduced;
   controls.autoRotateSpeed = 0.6;
-  host.addEventListener("pointerdown", () => {
+  const onHostDown = () => {
     controls.enableZoom = true;
     host.setAttribute("data-lenis-prevent", "");
-  });
-  host.addEventListener("pointerleave", () => {
+  };
+  const onHostLeave = () => {
     controls.enableZoom = false;
     host.removeAttribute("data-lenis-prevent");
-  });
+  };
+  host.addEventListener("pointerdown", onHostDown);
+  host.addEventListener("pointerleave", onHostLeave);
   let idle = 0;
   controls.addEventListener("start", () => {
     idle = 0;
@@ -92,6 +91,7 @@ export function initExplorer(root) {
   let home = null;
   let selected = null; // { type: 'part' | 'group', part?, group? }
   let hovered = null;
+  let destroyed = false;
   const explode = { v: 0 };
 
   stage.onTick((dt, t) => {
@@ -105,6 +105,7 @@ export function initExplorer(root) {
 
   loadGajjuAsset().then(
     (asset) => {
+      if (destroyed) return;
       robot = createGajju(asset, { shadows: true });
       scene.add(robot.group);
       home = frameCamera(camera, robot.bounds, { fill: 0.8 });
@@ -113,59 +114,32 @@ export function initExplorer(root) {
       camera.position.copy(home.position);
       controls.target.copy(home.target);
       controls.update();
-      status.remove();
-      buildList();
+      const counts = {};
+      robot.parts.forEach((p) => (counts[p.group] = (counts[p.group] || 0) + 1));
+      onReady(Object.keys(GROUPS).map((g) => ({ id: g, label: GROUPS[g].label, count: counts[g] || 0 })));
     },
     (err) => {
+      if (destroyed) return;
       console.error(err);
-      status.classList.add("is-error");
-      status.lastElementChild.textContent = `${err.message} Check that public/models/gajju2_robot.glb is deployed with the site.`;
-      root.querySelector(".explorer__tools")?.remove();
+      onError(`${err.message} Check that public/models/gajju2_robot.glb is deployed with the site.`);
     },
   );
-
-  function buildList() {
-    const counts = {};
-    robot.parts.forEach((p) => (counts[p.group] = (counts[p.group] || 0) + 1));
-    list.innerHTML = Object.keys(GROUPS)
-      .map(
-        (g) =>
-          `<li><button type="button" data-group="${g}"><span class="dot"></span>${GROUPS[g].label}<span class="explorer__count">${counts[g] || 0}</span></button></li>`,
-      )
-      .join("");
-  }
 
   const groupParts = (g) => robot.parts.filter((p) => p.group === g);
   function paint() {
     if (!robot) return;
     const selSet = new Set(
-      selected?.type === "part"
-        ? [selected.part]
-        : selected?.type === "group"
-          ? groupParts(selected.group)
-          : [],
+      selected?.type === "part" ? [selected.part] : selected?.type === "group" ? groupParts(selected.group) : [],
     );
     const hovSet = new Set(
-      hovered?.type === "part"
-        ? [hovered.part]
-        : hovered?.type === "group"
-          ? groupParts(hovered.group)
-          : [],
+      hovered?.type === "part" ? [hovered.part] : hovered?.type === "group" ? groupParts(hovered.group) : [],
     );
     robot.parts.forEach((p) => {
       if (selSet.has(p)) setHighlight(p.object, true, 0x3de8ff, 0.7);
       else if (hovSet.has(p)) setHighlight(p.object, true, 0x2f6bff, 0.35);
       else setHighlight(p.object, false);
     });
-    const activeGroup =
-      selected?.type === "group" ? selected.group : selected?.part?.group;
-    list.querySelectorAll("[data-group]").forEach((b) => {
-      b.classList.toggle("is-active", b.dataset.group === activeGroup);
-      b.classList.toggle(
-        "is-hover",
-        hovered?.type === "group" && hovered.group === b.dataset.group,
-      );
-    });
+    onHover(hovered?.type === "group" ? hovered.group : null);
   }
 
   const box = new THREE.Box3();
@@ -175,72 +149,35 @@ export function initExplorer(root) {
     const center = box.getCenter(new THREE.Vector3());
     const size = box.getSize(new THREE.Vector3()).length();
     const dir = camera.position.clone().sub(controls.target).normalize();
-    const dist = THREE.MathUtils.clamp(
-      size * 2.2,
-      home.distance * 0.35,
-      home.distance,
-    );
+    const dist = THREE.MathUtils.clamp(size * 2.2, home.distance * 0.35, home.distance);
     controls.autoRotate = false;
-    gsap.to(controls.target, {
-      x: center.x,
-      y: center.y,
-      z: center.z,
-      duration: dur(0.9),
-      ease: "power3.inOut",
-    });
+    gsap.to(controls.target, { x: center.x, y: center.y, z: center.z, duration: dur(0.9), ease: "power3.inOut" });
     const to = center.clone().add(dir.multiplyScalar(dist));
-    gsap.to(camera.position, {
-      x: to.x,
-      y: to.y,
-      z: to.z,
-      duration: dur(0.9),
-      ease: "power3.inOut",
-    });
+    gsap.to(camera.position, { x: to.x, y: to.y, z: to.z, duration: dur(0.9), ease: "power3.inOut" });
   }
 
   function select(sel, focus = true) {
     selected = sel;
     paint();
-    if (!sel) {
-      idx.textContent = "—";
-      nameEl.textContent = "Select a component";
-      descEl.textContent =
-        "Click any part of GAJJU, or pick an assembly from the list, to see what it is.";
-      return;
-    }
+    if (!sel) return onSelect(null);
     if (sel.type === "part") {
       const p = sel.part;
-      idx.textContent = `${pad(p.index)} / ${pad(robot.parts.length)} · ${p.groupLabel}`;
-      nameEl.textContent = p.cadName;
-      descEl.textContent = p.name;
+      onSelect({
+        idx: `${pad(p.index)} / ${pad(robot.parts.length)} · ${p.groupLabel}`,
+        name: p.cadName,
+        desc: p.name,
+        group: p.group,
+      });
     } else {
-      const ps = groupParts(sel.group);
-      idx.textContent = `${ps.length} parts`;
-      nameEl.textContent = GROUPS[sel.group].label;
-      descEl.textContent = GROUP_DESC[sel.group];
+      onSelect({
+        idx: `${groupParts(sel.group).length} parts`,
+        name: GROUPS[sel.group].label,
+        desc: GROUP_DESC[sel.group],
+        group: sel.group,
+      });
     }
-    gsap.fromTo(
-      [nameEl, descEl],
-      { opacity: 0, y: 8 },
-      { opacity: 1, y: 0, duration: dur(0.4), stagger: 0.05 },
-    );
-    if (focus)
-      focusOn(sel.type === "part" ? [sel.part] : groupParts(sel.group));
+    if (focus) focusOn(sel.type === "part" ? [sel.part] : groupParts(sel.group));
   }
-
-  list.addEventListener("click", (e) => {
-    const b = e.target.closest("[data-group]");
-    if (b && robot) select({ type: "group", group: b.dataset.group });
-  });
-  list.addEventListener("pointerover", (e) => {
-    const b = e.target.closest("[data-group]");
-    hovered = b ? { type: "group", group: b.dataset.group } : null;
-    paint();
-  });
-  list.addEventListener("pointerleave", () => {
-    hovered = null;
-    paint();
-  });
 
   // Raycasting on the CAD meshes
   const ray = new THREE.Raycaster();
@@ -248,20 +185,14 @@ export function initExplorer(root) {
   const pick = (e) => {
     if (!robot) return null;
     const r = canvas.getBoundingClientRect();
-    ndc.set(
-      ((e.clientX - r.left) / r.width) * 2 - 1,
-      -((e.clientY - r.top) / r.height) * 2 + 1,
-    );
+    ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
     ray.setFromCamera(ndc, camera);
     const hit = ray.intersectObjects(robot.meshes, false)[0];
     return hit ? robot.parts.find((p) => p.object === hit.object) : null;
   };
   let downAt = null;
   let raf = 0;
-  canvas.addEventListener(
-    "pointerdown",
-    (e) => (downAt = { x: e.clientX, y: e.clientY }),
-  );
+  canvas.addEventListener("pointerdown", (e) => (downAt = { x: e.clientX, y: e.clientY }));
   canvas.addEventListener("pointermove", (e) => {
     if (e.pointerType !== "mouse" || e.buttons || raf) return;
     raf = requestAnimationFrame(() => {
@@ -272,6 +203,7 @@ export function initExplorer(root) {
         paint();
       }
       canvas.style.cursor = p ? "pointer" : "grab";
+      if (!tip) return;
       if (p) {
         const r = host.getBoundingClientRect();
         tip.hidden = false;
@@ -281,49 +213,30 @@ export function initExplorer(root) {
     });
   });
   canvas.addEventListener("pointerleave", () => {
-    tip.hidden = true;
+    if (tip) tip.hidden = true;
     hovered = null;
     paint();
   });
   canvas.addEventListener("pointerup", (e) => {
-    if (!downAt || Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y) > 6)
-      return;
+    if (!downAt || Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y) > 6) return;
     const p = pick(e);
     select(p ? { type: "part", part: p } : null, false);
   });
 
-  // Tools
   const setMode = (exploded) => {
     if (!robot) return;
-    root
-      .querySelector('[data-ex="explode"]')
-      .setAttribute("aria-pressed", String(exploded));
-    root
-      .querySelector('[data-ex="assemble"]')
-      .setAttribute("aria-pressed", String(!exploded));
     gsap.killTweensOf(explode);
     gsap.to(explode, {
       v: exploded ? 1 : 0,
       duration: dur(1.2),
       ease: "power3.inOut",
       onUpdate: () => applyExplode(robot.parts, explode.v),
-      onComplete: () =>
-        !exploded && robot.parts.forEach((p) => p.object.position.copy(p.home)),
+      onComplete: () => !exploded && robot.parts.forEach((p) => p.object.position.copy(p.home)),
     });
     if (!selected) {
       const k = exploded ? 1.35 : 1;
-      const to = home.position
-        .clone()
-        .sub(home.target)
-        .multiplyScalar(k)
-        .add(home.target);
-      gsap.to(camera.position, {
-        x: to.x,
-        y: to.y,
-        z: to.z,
-        duration: dur(1.2),
-        ease: "power3.inOut",
-      });
+      const to = home.position.clone().sub(home.target).multiplyScalar(k).add(home.target);
+      gsap.to(camera.position, { x: to.x, y: to.y, z: to.z, duration: dur(1.2), ease: "power3.inOut" });
       gsap.to(controls.target, {
         x: home.target.x,
         y: home.target.y + (exploded ? 0.25 : 0),
@@ -332,40 +245,42 @@ export function initExplorer(root) {
       });
     }
   };
-  const dolly = (factor) => {
-    const offset = camera.position.clone().sub(controls.target);
-    const len = THREE.MathUtils.clamp(
-      offset.length() * factor,
-      controls.minDistance,
-      controls.maxDistance,
-    );
-    const to = controls.target.clone().add(offset.setLength(len));
-    gsap.to(camera.position, {
-      x: to.x,
-      y: to.y,
-      z: to.z,
-      duration: dur(0.5),
-      ease: "power2.out",
-    });
-  };
-  root.querySelector(".explorer__tools")?.addEventListener("click", (e) => {
-    const b = e.target.closest("[data-ex]");
-    if (!b || !robot) return;
-    const a = b.dataset.ex;
-    if (a === "explode") setMode(true);
-    if (a === "assemble") setMode(false);
-    if (a === "zoom-in") dolly(0.78);
-    if (a === "zoom-out") dolly(1.28);
-    if (a === "reset") {
+
+  return {
+    get ready() {
+      return !!robot;
+    },
+    selectGroup(g) {
+      if (robot) select({ type: "group", group: g });
+    },
+    hoverGroup(g) {
+      hovered = g ? { type: "group", group: g } : null;
+      paint();
+    },
+    clear() {
+      select(null);
+    },
+    /** Step through individual parts (arrow keys). */
+    step(dir) {
+      if (!robot) return;
+      const parts = robot.parts;
+      const i = selected?.type === "part" ? parts.indexOf(selected.part) : -1;
+      const n = dir > 0 ? (i + 1) % parts.length : (i - 1 + parts.length) % parts.length;
+      select({ type: "part", part: parts[n] });
+    },
+    setMode,
+    dolly(factor) {
+      if (!robot) return;
+      const offset = camera.position.clone().sub(controls.target);
+      const len = THREE.MathUtils.clamp(offset.length() * factor, controls.minDistance, controls.maxDistance);
+      const to = controls.target.clone().add(offset.setLength(len));
+      gsap.to(camera.position, { x: to.x, y: to.y, z: to.z, duration: dur(0.5), ease: "power2.out" });
+    },
+    reset() {
+      if (!robot) return;
       select(null);
       setMode(false);
-      gsap.to(camera.position, {
-        x: home.position.x,
-        y: home.position.y,
-        z: home.position.z,
-        duration: dur(1),
-        ease: "power3.inOut",
-      });
+      gsap.to(camera.position, { x: home.position.x, y: home.position.y, z: home.position.z, duration: dur(1), ease: "power3.inOut" });
       gsap.to(controls.target, {
         x: home.target.x,
         y: home.target.y,
@@ -374,24 +289,15 @@ export function initExplorer(root) {
         ease: "power3.inOut",
         onComplete: () => (controls.autoRotate = !reduced),
       });
-    }
-  });
-
-  root.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") return select(null);
-    if (
-      !robot ||
-      !["ArrowRight", "ArrowLeft"].includes(e.key) ||
-      !root.contains(document.activeElement) ||
-      /input/i.test(document.activeElement.tagName)
-    )
-      return;
-    const parts = robot.parts;
-    const i = selected?.type === "part" ? parts.indexOf(selected.part) : -1;
-    const n =
-      e.key === "ArrowRight"
-        ? (i + 1) % parts.length
-        : (i - 1 + parts.length) % parts.length;
-    select({ type: "part", part: parts[n] });
-  });
+    },
+    destroy() {
+      destroyed = true;
+      cancelAnimationFrame(raf);
+      host.removeEventListener("pointerdown", onHostDown);
+      host.removeEventListener("pointerleave", onHostLeave);
+      gsap.killTweensOf([explode, camera.position, controls.target]);
+      controls.dispose();
+      stage.dispose();
+    },
+  };
 }

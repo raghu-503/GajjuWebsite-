@@ -1,10 +1,10 @@
 // Light (cream) is the default theme; visitors can switch to dark and the choice is remembered.
 // The initial theme is applied by a tiny inline script in index.html's <head> to avoid a flash.
-import { load, save } from './storage.js';
+import { save } from './storage.js';
 
 const KEY = 'theme';
 const EVENT = 'nx:themechange';
-const META_COLOR = { light: '#f8f4ec', dark: '#05070a' };
+const META_COLOR = { light: '#F6EFE3', dark: '#05070a' }; // light = brand Cream (logo doc favicon snippet)
 
 /** Colours used inside the Three.js scenes, per theme. */
 export const SCENE_COLORS = {
@@ -46,8 +46,12 @@ export function onThemeChange(cb) {
   return () => window.removeEventListener(EVENT, handler);
 }
 
+/**
+ * The Gajju brand is light-only (Cream background; "pure white or dark-mode-only pages" are a
+ * don't), so the site always starts light and there is no theme switch. A dark choice saved by
+ * the old switch is ignored. setTheme() stays for the 3D scenes' theme hooks.
+ */
 export function initTheme() {
-  // The inline head script normally did this already; repeat in case it was missing.
-  document.documentElement.dataset.theme = load(KEY, 'light') === 'dark' ? 'dark' : 'light';
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', META_COLOR[getTheme()]);
+  document.documentElement.dataset.theme = 'light';
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', META_COLOR.light);
 }

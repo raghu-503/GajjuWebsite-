@@ -2,11 +2,30 @@ import {
   ArrowRight, ArrowUpRight, Box, Boxes, Check, ChevronLeft, ChevronRight, Clock, CreditCard, Hand,
   Landmark, Lock, LogOut, Mail, Menu, Minus, Moon, Move3d, Package, Plus, RotateCcw, Search,
   ShieldCheck, ShoppingBag, Smartphone, Star, Sun, Trash2, Truck, User, X, Zap, ZoomIn, ZoomOut,
+  AudioLines, Pause, BookOpenCheck, BrainCircuit, Cable, CircleDot, Code, Cog, CookingPot, Cuboid, DoorOpen, Footprints, ListChecks, Play, PlugZap, Users, WifiOff, Wrench,
 } from 'lucide-react';
 
 // Kebab-case names, matching the old <i data-lucide="…"> markup, so icons can be picked by name
 // (toasts, shipping methods, …).
 const ICONS = {
+  'audio-lines': AudioLines,
+  'book-open-check': BookOpenCheck,
+  'brain-circuit': BrainCircuit,
+  'cable': Cable,
+  'circle-dot': CircleDot,
+  'code': Code,
+  'cog': Cog,
+  'cooking-pot': CookingPot,
+  'cuboid': Cuboid,
+  'door-open': DoorOpen,
+  'footprints': Footprints,
+  'list-checks': ListChecks,
+  'play': Play,
+  'pause': Pause,
+  'plug-zap': PlugZap,
+  'users': Users,
+  'wifi-off': WifiOff,
+  'wrench': Wrench,
   'arrow-right': ArrowRight,
   'arrow-up-right': ArrowUpRight,
   box: Box,

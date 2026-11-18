@@ -8,7 +8,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "test:browser": "node tests/browser-smoke.mjs",
-    "test": "vite build && node tests/browser-smoke.mjs"
+    "test": "vite build && node tests/browser-smoke.mjs",
+    "test:shop": "node tests/run-shop.mjs",
+    "optimize:glb": "node scripts/optimize-glb.mjs"
   },
   "dependencies": {
     "gsap": "3.12.5",

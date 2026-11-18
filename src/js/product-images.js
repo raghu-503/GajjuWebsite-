@@ -1,13 +1,12 @@
-import * as THREE from "three";
 import {
   renderSnapshots,
   defineSnapshots,
   registerSnapshotPlaceholders,
   refreshSnapshotImages,
 } from "./stage.js";
-import { applyExplode } from "./robot-model.js";
 import { loadGajjuAsset, createGajju, addGajjuStudio } from "./gajju-model.js";
 import { getProduct } from "./data.js";
+import { SHOT_DEFS, svgUrl, LOADING_LABEL } from "./product-shots.js";
 import { onThemeChange } from "./theme.js";
 
 /** Studio "photographs" rendered from the real GAJJU CAD model. Cached per page load. */
@@ -20,76 +19,10 @@ function buildGajjuScene(scene, asset) {
   return r;
 }
 
-const SHOTS = {
-  // GAJJU is rendered from the real CAD model (async), in the navy product studio.
-  GAJJU: {
-    asset: true,
-    build: buildGajjuScene,
-    shots: [
-      {
-        position: [4.6, 2.5, 5.9],
-        target: [0, 0.85, 0.15],
-        alt: "three-quarter front view",
-        setup: (r) => applyExplode(r.parts, 0),
-      },
-      {
-        position: [7.4, 2.2, 0.4],
-        target: [0, 0.85, 0.1],
-        alt: "side profile",
-        setup: (r) => applyExplode(r.parts, 0),
-      },
-      {
-        position: [1.9, 2.0, 3.6],
-        target: [0, 1.3, 0.7],
-        alt: "head, trunk and gripper close-up",
-        setup: (r) => applyExplode(r.parts, 0),
-      },
-      {
-        position: [-4.4, 2.6, 5.6],
-        target: [0, 0.85, 0.15],
-        alt: "front view from the left",
-        setup: (r) => applyExplode(r.parts, 0),
-      },
-    ],
-  },
-  // The DIY kit leads with the exploded view: all the parts you build it from.
-  "GAJJU-kit": {
-    asset: true,
-    build: buildGajjuScene,
-    shots: [
-      {
-        position: [5.6, 3.9, 7.2],
-        target: [0, 1.1, 0.3],
-        alt: "all 104 parts in an exploded view",
-        setup: (r) => applyExplode(r.parts, 1),
-      },
-      {
-        position: [0.2, 7.4, 1.4],
-        target: [0, 1.0, 0.2],
-        alt: "parts laid out, seen from above",
-        setup: (r) => applyExplode(r.parts, 1.2),
-      },
-      {
-        position: [4.6, 2.5, 5.9],
-        target: [0, 0.85, 0.15],
-        alt: "the finished robot once built",
-        setup: (r) => applyExplode(r.parts, 0),
-      },
-      {
-        position: [1.9, 2.0, 3.6],
-        target: [0, 1.3, 0.7],
-        alt: "head, trunk and gripper close-up",
-        setup: (r) => applyExplode(r.parts, 0),
-      },
-    ],
-  },
-};
-
-const svgUrl = (label, i) =>
-  "data:image/svg+xml;utf8," +
-  encodeURIComponent(
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 720"><!--${i}--><defs><radialGradient id="g" cx="50%" cy="45%"><stop offset="0" stop-color="#13233a"/><stop offset="1" stop-color="#060b13"/></radialGradient></defs><rect width="720" height="720" fill="url(#g)"/><text x="360" y="372" fill="#8fa3b8" font-family="Archivo, system-ui, sans-serif" font-size="26" text-anchor="middle">${label}</text></svg>`,
-  );
+// Shot definitions (positions, alt text) live in product-shots.js, which has no Three.js.
+const SHOTS = Object.fromEntries(
+  Object.entries(SHOT_DEFS).map(([id, shots]) => [id, { asset: true, build: buildGajjuScene, shots }]),
+);
 
 const CHANGE = "nx:product-images";
 /** Subscribe to "photos changed" (model loaded, or re-rendered for a new theme). */
@@ -107,7 +40,7 @@ function placeholders(id, cfg) {
   if (cfg.failed) return cfg.failed;
   if (!cfg.placeholders) {
     cfg.placeholders = cfg.shots.map((_, i) =>
-      svgUrl("Loading GAJJU CAD model…", `${id}-${i}`),
+      svgUrl(LOADING_LABEL, `${id}-${i}`),
     );
     registerSnapshotPlaceholders(id, cfg.placeholders);
     loadGajjuAsset().then(
@@ -155,4 +88,3 @@ export function getProductImages(id, count = Infinity) {
 }
 
 export const getThumb = (id) => getProductImages(id, 1)[0]?.src || "";
-export { THREE };

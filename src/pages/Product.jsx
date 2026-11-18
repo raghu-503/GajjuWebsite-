@@ -12,7 +12,6 @@ import { useReveals } from '../hooks/useReveals.js';
 import { useDocumentTitle } from '../hooks/useDocumentTitle.js';
 import { getProduct, PRODUCTS, REVIEWS, KIT_COMPONENTS, formatPrice } from '../js/data.js';
 import { FREE_SHIPPING_THRESHOLD, addToCart } from '../js/cart.js';
-import { createGajjuViewer } from '../js/gajju-viewer.js';
 import { load, save } from '../js/storage.js';
 import { toast } from '../js/toast.js';
 import { gsap, reduced } from '../js/animations.js';
@@ -74,8 +73,20 @@ function Gallery({ product: p }) {
 
   useEffect(() => {
     if (!started) return;
-    const viewer = createGajjuViewer(stageRef.current, { explode: 0, zoomOnEngage: true, zoom: true, ui: visualRef.current });
-    return () => viewer?.destroy();
+    let alive = true;
+    let viewer = null;
+    // The interactive viewer (and Three.js) loads only when the 3D view is opened.
+    import('../js/gajju-viewer.js').then(
+      ({ createGajjuViewer }) => {
+        if (!alive) return;
+        viewer = createGajjuViewer(stageRef.current, { explode: 0, zoomOnEngage: true, zoom: true, ui: visualRef.current });
+      },
+      (err) => console.error(err),
+    );
+    return () => {
+      alive = false;
+      viewer?.destroy();
+    };
   }, [started]);
 
   const photo = !is3d ? images[Number(view)] : null;

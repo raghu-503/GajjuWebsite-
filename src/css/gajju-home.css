@@ -1,0 +1,1152 @@
+/* ==========================================================================
+   Gajju brand: Home page.
+   Tokens are copied from the Gajju brand guidelines ("On the website"). Use only these
+   variables, never raw colour codes, so a colour change later is a one-line edit.
+
+   Scope: everything here applies to the Home page only (.gj and body[data-page="home"]),
+   so the shop, product, cart and checkout pages keep their current look until they are moved
+   to the brand. The old CSS files are untouched.
+   ========================================================================== */
+
+:root {
+  /* colours */
+  --gajju-saffron: #f08a24;
+  --gajju-saffron-deep: #a9530b;
+  --gajju-peach: #fbe3c8;
+  --gajju-ink: #1c2230;
+  --gajju-slate: #565b66;
+  --gajju-elephant-grey: #8a9099;
+  --gajju-cream: #f6efe3;
+  --gajju-paper: #fffcf6;
+  --gajju-sand: #dccfbb;
+  --gajju-teal: #1f6f78;
+  --gajju-teal-tint: #d5ebec;
+
+  /* type (Google Fonts) */
+  --font-heading: 'Rubik', Arial, sans-serif;
+  --font-body: 'Nunito Sans', Arial, sans-serif;
+
+  /* shape and spacing */
+  --radius-card: 16px;
+  --radius-button: 999px;
+  --space: 8px; /* multiples: 8, 16, 24, 32, 48, 64, 96 */
+
+  --gj-max: 1200px;
+  --gj-gutter: 16px;
+  --gj-section-y: 64px;
+}
+@media (min-width: 640px) {
+  :root {
+    --gj-gutter: 24px;
+  }
+}
+@media (min-width: 1024px) {
+  :root {
+    --gj-gutter: 32px;
+    --gj-section-y: 96px;
+  }
+}
+
+/* ---------- Shared site chrome on the Home page ----------------------------------------------
+   The header, footer and panels are shared with the other pages. On Home only, their existing
+   variables are pointed at the brand palette (light only), so they match without new markup. */
+body[data-page='home'] {
+  --black: var(--gajju-cream);
+  --char: var(--gajju-paper);
+  --char-2: var(--gajju-paper);
+  --char-3: var(--gajju-peach);
+  --white: var(--gajju-ink);
+  --text-soft: var(--gajju-slate);
+  --muted: var(--gajju-slate);
+  --dim: var(--gajju-elephant-grey);
+  --cyan: var(--gajju-saffron-deep);
+  --cyan-soft: var(--gajju-saffron-deep);
+  --cyan-rgb: 169 83 11;
+  --blue: var(--gajju-saffron-deep);
+  --blue-soft: var(--gajju-saffron-deep);
+  --blue-rgb: 169 83 11;
+  --on-accent: #ffffff; /* white on Saffron Deep passes (5.3:1) */
+  --bg-rgb: 246 239 227;
+  --surface-rgb: 255 252 246;
+  --raised-rgb: 255 252 246;
+  --ink-rgb: 28 34 48;
+  --line-rgb: 120 98 66;
+  --scrim-rgb: 28 34 48;
+  --glass: rgb(255 252 246 / 0.88);
+  --glow: none;
+  --font: var(--font-body);
+  --ok: var(--gajju-teal);
+}
+/* The brand is light-only ("Keep Cream as the main background"), so Home has no theme switch. */
+body[data-page='home'] .theme-toggle {
+  display: none;
+}
+/* Keyboard focus: 3 px Teal outline on every page (brand guidelines, "Focus outline").
+   Teal on Cream/Paper is 5.1–5.7:1. On the dark band and footer Teal on Ink is only 2.7:1, so
+   there the Teal ring sits on a thin Paper halo to stay visible. */
+:focus-visible {
+  outline: 3px solid var(--gajju-teal);
+  outline-offset: 3px;
+}
+.gj-section--dark :focus-visible,
+.gj-footer :focus-visible {
+  outline-offset: 0;
+  box-shadow: 0 0 0 5px var(--gajju-paper);
+}
+body[data-page='home'] ::selection {
+  background: var(--gajju-peach);
+  color: var(--gajju-ink);
+}
+
+/* ---------- Page and type ---------- */
+.gj {
+  background: var(--gajju-cream);
+  color: var(--gajju-ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+}
+@media (min-width: 1024px) {
+  .gj {
+    font-size: 17px;
+  }
+}
+.gj h1,
+.gj h2,
+.gj h3 {
+  font-family: var(--font-heading);
+  color: var(--gajju-ink);
+  font-stretch: normal;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+.gj-container {
+  width: 100%;
+  max-width: calc(var(--gj-max) + 2 * var(--gj-gutter));
+  margin-inline: auto;
+  padding-inline: var(--gj-gutter);
+}
+.gj-section {
+  padding-block: var(--gj-section-y);
+  scroll-margin-top: var(--nav-h);
+}
+.gj-section--paper {
+  background: var(--gajju-paper);
+}
+.gj-section--cream {
+  background: var(--gajju-cream);
+}
+.gj-section--dark {
+  background: var(--gajju-ink);
+  color: var(--gajju-paper);
+}
+.gj-section--dark h2,
+.gj-section--dark h3 {
+  color: var(--gajju-paper);
+}
+
+.gj-eyebrow {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gajju-saffron-deep);
+  margin: 0 0 calc(var(--space) * 1.5);
+}
+.gj-section--dark .gj-eyebrow {
+  color: var(--gajju-saffron); /* Saffron on Ink passes (6.3:1) */
+}
+.gj-h1 {
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 1.08;
+}
+.gj-h2 {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.15;
+}
+.gj-h3 {
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 1.25;
+}
+@media (min-width: 1024px) {
+  .gj-h1 {
+    font-size: 56px;
+  }
+  .gj-h2 {
+    font-size: 36px;
+  }
+  .gj-h3 {
+    font-size: 22px;
+  }
+}
+.gj-lead {
+  max-width: 62ch;
+  margin-top: calc(var(--space) * 2);
+  color: var(--gajju-slate);
+  font-size: 1.06em;
+}
+.gj-section--dark .gj-lead,
+.gj-section--dark p {
+  color: var(--gajju-paper);
+}
+.gj-caption {
+  font-size: 14px;
+  color: var(--gajju-slate);
+}
+.gj-section--dark .gj-caption {
+  color: rgb(255 252 246 / 0.78);
+}
+.gj p {
+  max-width: 70ch;
+}
+.gj-head {
+  margin-bottom: calc(var(--space) * 5);
+}
+.gj a:not([class]) {
+  color: var(--gajju-saffron-deep);
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 3px;
+}
+.gj a:not([class]):hover {
+  text-decoration-color: currentColor;
+}
+
+/* ---------- Buttons ---------- */
+.gj-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--space) * 1.5);
+  margin-top: calc(var(--space) * 4);
+}
+.gj-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space);
+  min-height: 48px;
+  padding: 0 calc(var(--space) * 3);
+  border-radius: var(--radius-button);
+  border: 2px solid transparent;
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+.gj-btn svg {
+  width: 18px;
+  height: 18px;
+}
+.gj-btn--primary {
+  background: var(--gajju-saffron);
+  color: var(--gajju-ink); /* Ink on Saffron (6.3:1); never white on Saffron */
+}
+.gj-btn--primary:hover {
+  background: var(--gajju-peach);
+  border-color: var(--gajju-saffron);
+}
+.gj-btn--secondary {
+  background: transparent;
+  border-color: var(--gajju-ink);
+  color: var(--gajju-ink);
+}
+.gj-btn--secondary:hover {
+  background: var(--gajju-ink);
+  color: var(--gajju-paper);
+}
+.gj-section--dark .gj-btn--secondary {
+  border-color: var(--gajju-paper);
+  color: var(--gajju-paper);
+}
+.gj-section--dark .gj-btn--secondary:hover {
+  background: var(--gajju-paper);
+  color: var(--gajju-ink);
+}
+
+/* ---------- Cards, icons, labels ---------- */
+.gj-grid {
+  display: grid;
+  gap: calc(var(--space) * 2);
+}
+@media (min-width: 640px) {
+  .gj-grid--2,
+  .gj-grid--3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .gj-grid {
+    gap: calc(var(--space) * 3);
+  }
+}
+@media (min-width: 1024px) {
+  .gj-grid--3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+.gj-card {
+  background: var(--gajju-paper);
+  border: 1px solid var(--gajju-sand);
+  border-radius: var(--radius-card);
+  padding: calc(var(--space) * 3);
+}
+.gj-card--highlight {
+  background: var(--gajju-peach);
+  border-color: transparent;
+}
+.gj-card .gj-h3 {
+  margin-top: calc(var(--space) * 2);
+}
+.gj-card p {
+  margin-top: var(--space);
+}
+.gj-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--gajju-peach);
+  color: var(--gajju-saffron-deep);
+  flex: none;
+}
+.gj-icon svg {
+  width: 24px;
+  height: 24px;
+}
+.gj-skill {
+  display: block;
+  margin-top: calc(var(--space) * 2);
+  padding-top: calc(var(--space) * 1.5);
+  border-top: 1px solid var(--gajju-sand);
+  font-size: 14px;
+  color: var(--gajju-slate);
+}
+.gj-skill strong {
+  color: var(--gajju-ink);
+}
+
+.gj-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  padding: 3px 10px;
+  border-radius: var(--radius-button);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+.gj-status--done {
+  background: var(--gajju-teal-tint);
+  color: var(--gajju-teal);
+}
+/* "Planned", "Coming", "Being written": Peach background (brand). Saffron Deep text on Peach is
+   4.31:1, below WCAG AA for 13 px text, so the text is Ink (12.8:1) and the Saffron Deep accent
+   moves to a small dot (non-text, 4.31:1 ≥ 3:1). */
+.gj-status--planned {
+  background: var(--gajju-peach);
+  color: var(--gajju-ink);
+}
+.gj-status--planned::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--gajju-saffron-deep);
+  flex: none;
+}
+.gj-status--awaiting {
+  background: transparent;
+  border: 1px dashed var(--gajju-slate);
+  color: var(--gajju-slate);
+  white-space: normal;
+}
+
+.gj-media-label {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: var(--radius-button);
+  background: var(--gajju-paper);
+  border: 1px solid var(--gajju-sand);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gajju-slate);
+}
+
+/* Unconfirmed text from the content document ("[…]" blanks). Visible during review; hidden in
+   production builds made with VITE_HIDE_PENDING=true. */
+.gj-pending {
+  background: transparent;
+  color: inherit;
+  border-bottom: 2px dashed var(--gajju-saffron);
+  padding: 0 2px;
+}
+.gj-pending__note {
+  margin-left: 6px;
+  font-size: 0.78em;
+  font-weight: 700;
+  color: var(--gajju-saffron-deep);
+}
+.gj-section--dark .gj-pending__note {
+  color: var(--gajju-saffron);
+}
+
+.gj-placeholder {
+  display: grid;
+  place-items: center;
+  gap: var(--space);
+  aspect-ratio: 4 / 3;
+  padding: calc(var(--space) * 2);
+  border: 2px dashed var(--gajju-sand);
+  border-radius: 12px;
+  background: var(--gajju-cream);
+  color: var(--gajju-slate);
+  font-size: 14px;
+  text-align: center;
+}
+
+/* ---------- 1. Hero ---------- */
+.gj-hero {
+  padding-block: calc(var(--nav-h) + 32px) var(--gj-section-y);
+}
+.gj-hero__grid {
+  display: grid;
+  gap: calc(var(--space) * 4);
+  align-items: center;
+}
+@media (min-width: 1024px) {
+  .gj-hero__grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+    gap: calc(var(--space) * 6);
+  }
+}
+.gj-hero__lead {
+  margin-top: calc(var(--space) * 3);
+  font-size: 1.06em;
+  color: var(--gajju-ink);
+}
+.gj-hero__media {
+  position: relative;
+  margin: 0;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius-card);
+  background: var(--gajju-paper);
+  border: 1px solid var(--gajju-sand);
+  overflow: hidden;
+}
+.gj-hero__stage {
+  position: absolute;
+  inset: 0;
+}
+.gj-hero__stage .stage-canvas {
+  width: 100%;
+  height: 100%;
+}
+.gj-hero__media figcaption {
+  position: absolute;
+  left: calc(var(--space) * 2);
+  bottom: calc(var(--space) * 2);
+}
+/* Walking simulation loop: fills the frame (the 16:9 clip is centred on the robot). */
+.gj-hero__video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: var(--gajju-cream);
+}
+.gj-hero__toggle {
+  position: absolute;
+  right: calc(var(--space) * 2);
+  bottom: calc(var(--space) * 2);
+}
+.gj-dialog__video {
+  margin: 0;
+  display: grid;
+  gap: var(--space);
+}
+.gj-strip {
+  display: grid;
+  gap: var(--space) calc(var(--space) * 3);
+  margin-top: calc(var(--space) * 6);
+  padding-top: calc(var(--space) * 3);
+  border-top: 1px solid var(--gajju-sand);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--gajju-ink);
+}
+@media (min-width: 640px) {
+  .gj-strip {
+    grid-template-columns: repeat(2, auto);
+    justify-content: start;
+  }
+}
+@media (min-width: 1024px) {
+  .gj-strip {
+    grid-template-columns: repeat(4, auto);
+    justify-content: space-between;
+  }
+}
+.gj-strip li {
+  display: flex;
+  align-items: center;
+  gap: var(--space);
+}
+.gj-strip li::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--gajju-saffron);
+  flex: none;
+}
+
+/* 3D stage status (loading / error), shared by the hero and the viewer */
+.gj-stage-status {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: var(--space);
+  padding: calc(var(--space) * 3);
+  text-align: center;
+  color: var(--gajju-slate);
+  font-size: 14px;
+  pointer-events: none;
+}
+.gj-stage-status.is-error {
+  color: var(--gajju-ink);
+}
+.gj-spinner {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 3px solid var(--gajju-sand);
+  border-top-color: var(--gajju-saffron);
+  animation: gj-spin 0.9s linear infinite;
+}
+@keyframes gj-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------- 2. Activities ---------- */
+.gj-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space) calc(var(--space) * 1.5);
+  margin-top: calc(var(--space) * 3);
+}
+
+/* ---------- 3. Open design (the one dark band) ---------- */
+.gj-open__item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: calc(var(--space) * 2);
+  padding: calc(var(--space) * 3);
+  border-radius: var(--radius-card);
+  border: 1px solid rgb(255 252 246 / 0.16);
+}
+.gj-open__item .gj-icon {
+  background: rgb(240 138 36 / 0.16);
+  color: var(--gajju-saffron);
+}
+.gj-open__item h3 {
+  font-size: 20px;
+  font-weight: 500;
+}
+.gj-open__item p {
+  margin-top: 4px;
+  color: rgb(255 252 246 / 0.86);
+}
+.gj-open__item .gj-status {
+  margin-top: calc(var(--space) * 1.5);
+}
+.gj-open__terms {
+  display: grid;
+  gap: calc(var(--space) * 2);
+  margin-top: calc(var(--space) * 5);
+  padding-top: calc(var(--space) * 3);
+  border-top: 1px solid rgb(255 252 246 / 0.16);
+}
+@media (min-width: 1024px) {
+  .gj-open__terms {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: calc(var(--space) * 4);
+  }
+}
+.gj-open__terms h3 {
+  font-size: 16px;
+  font-family: var(--font-body);
+  font-weight: 700;
+  color: var(--gajju-saffron);
+  margin-bottom: 4px;
+}
+
+/* ---------- 4. Learning ladder ---------- */
+.gj-ladder {
+  display: grid;
+  gap: calc(var(--space) * 2);
+  counter-reset: ladder;
+}
+@media (min-width: 640px) {
+  .gj-ladder {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: calc(var(--space) * 3);
+  }
+}
+@media (min-width: 1024px) {
+  .gj-ladder {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+.gj-ladder__step {
+  position: relative;
+}
+.gj-ladder__num {
+  font-family: var(--font-heading);
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--gajju-saffron-deep);
+}
+@media (min-width: 1024px) {
+  .gj-ladder__num {
+    font-size: 48px;
+  }
+}
+.gj-ladder__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space);
+}
+.gj-ladder__level {
+  display: inline-block;
+  margin-top: var(--space);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--gajju-teal);
+}
+
+/* ---------- 5. Inside Gajju Mini (3D viewer) ---------- */
+.gj-inside {
+  display: grid;
+  gap: calc(var(--space) * 3);
+}
+@media (min-width: 1024px) {
+  .gj-inside {
+    grid-template-columns: minmax(0, 1fr) 340px;
+    align-items: start;
+  }
+}
+.gj-viewer {
+  position: relative;
+  border-radius: var(--radius-card);
+  background: var(--gajju-paper);
+  border: 1px solid var(--gajju-sand);
+  overflow: hidden;
+}
+/* Phones: shorter than the screen, so there is always room beside it to scroll the page
+   (inside the stage, one-finger drag turns the model and pinch zooms). */
+.gj-viewer__stage {
+  position: relative;
+  height: min(56vh, 420px);
+  min-height: 300px;
+  cursor: grab;
+}
+@media (min-width: 1024px) {
+  .gj-viewer__stage {
+    height: 560px;
+  }
+}
+.gj-viewer__stage:active {
+  cursor: grabbing;
+}
+.gj-viewer__stage .stage-canvas {
+  width: 100%;
+  height: 100%;
+}
+.gj-viewer__label {
+  position: absolute;
+  top: calc(var(--space) * 2);
+  left: calc(var(--space) * 2);
+  pointer-events: none;
+}
+.gj-viewer__tip {
+  position: absolute;
+  z-index: 2;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: var(--gajju-ink);
+  color: var(--gajju-paper);
+  font-size: 13px;
+  font-weight: 700;
+  pointer-events: none;
+  transform: translate(-50%, calc(-100% - 12px));
+  white-space: nowrap;
+}
+.gj-viewer__tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space);
+  padding: calc(var(--space) * 1.5);
+  border-top: 1px solid var(--gajju-sand);
+  background: var(--gajju-paper);
+}
+.gj-tool {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 14px;
+  border-radius: var(--radius-button);
+  border: 1px solid var(--gajju-sand);
+  background: var(--gajju-paper);
+  color: var(--gajju-ink);
+  font-size: 14px;
+  font-weight: 700;
+  justify-content: center;
+}
+.gj-tool:hover {
+  border-color: var(--gajju-ink);
+}
+.gj-tool[aria-pressed='true'] {
+  background: var(--gajju-ink);
+  border-color: var(--gajju-ink);
+  color: var(--gajju-paper);
+}
+.gj-tool--icon {
+  padding: 0;
+}
+.gj-tool svg {
+  width: 18px;
+  height: 18px;
+}
+.gj-tool__sep {
+  flex: 1;
+}
+/* Phones: view mode on the first row, zoom and reset on the second. */
+@media (max-width: 639px) {
+  .gj-tool__sep {
+    flex-basis: 100%;
+    height: 0;
+  }
+}
+.gj-viewer__side {
+  display: grid;
+  gap: calc(var(--space) * 2);
+}
+.gj-part {
+  min-height: 168px;
+}
+.gj-part__idx {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gajju-teal);
+}
+.gj-part h3 {
+  margin-top: 4px;
+}
+.gj-part__tbc {
+  margin-top: calc(var(--space) * 1.5);
+}
+.gj-part__tbc .gj-status {
+  margin-right: 4px;
+}
+.gj-groups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space);
+}
+.gj-groups button {
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: var(--radius-button);
+  border: 1px solid var(--gajju-sand);
+  background: var(--gajju-paper);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--gajju-ink);
+}
+.gj-groups button:hover,
+.gj-groups button.is-hover {
+  border-color: var(--gajju-teal);
+}
+.gj-groups button.is-active {
+  background: var(--gajju-teal-tint);
+  border-color: var(--gajju-teal);
+  color: var(--gajju-teal);
+}
+.gj-facts {
+  margin-top: calc(var(--space) * 3);
+}
+.gj-facts__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space) calc(var(--space) * 1.5);
+}
+.gj-facts__head .gj-h3 {
+  margin-top: 0;
+}
+.gj-facts__list {
+  display: grid;
+  gap: 6px calc(var(--space) * 3);
+  margin-top: calc(var(--space) * 2);
+}
+@media (min-width: 640px) {
+  .gj-facts__list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1024px) {
+  .gj-facts__list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+.gj-after {
+  margin-top: calc(var(--space) * 3);
+}
+.gj-faq-title {
+  margin-bottom: calc(var(--space) * 3);
+}
+.gj-icon--paper {
+  background: var(--gajju-paper);
+}
+.gj-facts li {
+  display: flex;
+  gap: var(--space);
+}
+.gj-facts li::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  margin-top: 0.62em;
+  border-radius: 50%;
+  background: var(--gajju-saffron);
+  flex: none;
+}
+.gj-facts .gj-caption {
+  margin-top: calc(var(--space) * 1.5);
+}
+
+/* ---------- 6. Build steps ---------- */
+.gj-steps {
+  display: grid;
+  gap: calc(var(--space) * 2);
+  counter-reset: step;
+}
+@media (min-width: 640px) {
+  .gj-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1024px) {
+  .gj-steps {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: calc(var(--space) * 3);
+  }
+}
+.gj-step {
+  display: grid;
+  gap: calc(var(--space) * 1.5);
+  align-content: start;
+}
+.gj-step .gj-h3 {
+  margin-top: 0;
+}
+@media (max-width: 639px) {
+  .gj-step .gj-placeholder {
+    aspect-ratio: 16 / 7;
+  }
+}
+
+/* ---------- 7. Made for small hands ---------- */
+.gj-hands {
+  display: grid;
+  gap: calc(var(--space) * 2);
+}
+@media (min-width: 1024px) {
+  .gj-hands {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: calc(var(--space) * 4);
+  }
+}
+.gj-hands li {
+  display: flex;
+  align-items: flex-start;
+  gap: calc(var(--space) * 2);
+}
+.gj-hands p {
+  padding-top: 10px;
+}
+
+/* ---------- 8. Where we are ---------- */
+.gj-timeline {
+  display: grid;
+  gap: calc(var(--space) * 2);
+}
+@media (min-width: 1024px) {
+  .gj-timeline {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: calc(var(--space) * 3);
+  }
+}
+.gj-timeline li {
+  position: relative;
+  display: grid;
+  gap: var(--space);
+  padding: calc(var(--space) * 3);
+  border-radius: var(--radius-card);
+  background: var(--gajju-paper);
+  border: 1px solid var(--gajju-sand);
+}
+.gj-timeline__when {
+  font-family: var(--font-heading);
+  font-weight: 500;
+  font-size: 20px;
+}
+.gj-posts {
+  margin-top: calc(var(--space) * 6);
+}
+
+/* ---------- 9. Founding ---------- */
+.gj-founding {
+  display: grid;
+  gap: calc(var(--space) * 3);
+  align-items: center;
+}
+@media (min-width: 1024px) {
+  .gj-founding {
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    gap: calc(var(--space) * 6);
+  }
+}
+.gj-founding__cta {
+  display: grid;
+  gap: calc(var(--space) * 1.5);
+  justify-items: start;
+}
+
+/* ---------- 10. Join + FAQ ---------- */
+.gj-join {
+  display: grid;
+  gap: calc(var(--space) * 6);
+}
+@media (min-width: 1024px) {
+  .gj-join {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+.gj-form {
+  display: grid;
+  gap: calc(var(--space) * 2.5);
+}
+.gj-form__row {
+  display: grid;
+  gap: calc(var(--space) * 2.5);
+}
+@media (min-width: 640px) {
+  .gj-form__row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.gj-field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.gj-field > label,
+.gj-fieldset legend {
+  font-weight: 700;
+  font-size: 15px;
+}
+.gj-field__opt {
+  font-weight: 400;
+  color: var(--gajju-slate);
+}
+.gj-input {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--gajju-sand);
+  background: var(--gajju-paper);
+  color: var(--gajju-ink);
+  font-family: var(--font-body);
+  font-size: 16px; /* 16px stops iOS zooming into the field */
+}
+.gj-input:hover {
+  border-color: var(--gajju-elephant-grey);
+}
+.gj-input:focus-visible {
+  border-color: var(--gajju-teal);
+}
+.gj-input[aria-invalid='true'] {
+  border-color: #b3261e;
+}
+select.gj-input {
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--gajju-ink) 50%),
+    linear-gradient(135deg, var(--gajju-ink) 50%, transparent 50%);
+  background-position: calc(100% - 20px) 50%, calc(100% - 15px) 50%;
+  background-size: 5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 40px;
+}
+.gj-fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space);
+  min-width: 0;
+}
+.gj-fieldset legend {
+  padding: 0;
+  margin-bottom: 6px;
+}
+.gj-check {
+  display: flex;
+  align-items: flex-start;
+  gap: calc(var(--space) * 1.5);
+  min-height: 32px;
+  cursor: pointer;
+}
+.gj-check input {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin: 2px 0 0;
+  accent-color: var(--gajju-teal);
+}
+.gj-error {
+  font-size: 14px;
+  font-weight: 700;
+  color: #b3261e; /* error red on Paper/Cream: 5.9:1 */
+}
+.gj-form__msg {
+  padding: calc(var(--space) * 2) calc(var(--space) * 2.5);
+  border-radius: 12px;
+  font-weight: 600;
+}
+.gj-form__msg.is-ok {
+  background: var(--gajju-teal-tint);
+  color: var(--gajju-teal);
+}
+.gj-form__msg.is-info {
+  background: var(--gajju-peach);
+  color: var(--gajju-ink);
+}
+.gj-form__msg.is-error {
+  background: #fbe4e2;
+  color: #8c1d18;
+}
+.gj-form .gj-btn {
+  justify-self: start;
+}
+
+.gj-faq {
+  display: grid;
+  gap: calc(var(--space) * 1.5);
+}
+.gj-faq details {
+  border-radius: var(--radius-card);
+  background: var(--gajju-paper);
+  border: 1px solid var(--gajju-sand);
+}
+.gj-faq summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(var(--space) * 2);
+  min-height: 56px;
+  padding: calc(var(--space) * 1.5) calc(var(--space) * 2.5);
+  font-family: var(--font-heading);
+  font-weight: 500;
+  font-size: 18px;
+  cursor: pointer;
+  list-style: none;
+}
+.gj-faq summary::-webkit-details-marker {
+  display: none;
+}
+.gj-faq summary::after {
+  content: '+';
+  font-size: 24px;
+  line-height: 1;
+  color: var(--gajju-saffron-deep);
+  flex: none;
+}
+.gj-faq details[open] summary::after {
+  content: '\2013';
+}
+.gj-faq details > div {
+  padding: 0 calc(var(--space) * 2.5) calc(var(--space) * 2.5);
+  color: var(--gajju-slate);
+}
+
+/* ---------- Walking video dialog ---------- */
+.gj-dialog {
+  width: min(880px, calc(100vw - 32px));
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-card);
+  background: var(--gajju-paper);
+  color: var(--gajju-ink);
+  font-family: var(--font-body);
+}
+.gj-dialog::backdrop {
+  background: rgb(28 34 48 / 0.6);
+}
+.gj-dialog__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(var(--space) * 2);
+  padding: calc(var(--space) * 2) calc(var(--space) * 2.5);
+  border-bottom: 1px solid var(--gajju-sand);
+}
+.gj-dialog__head h2 {
+  font-family: var(--font-heading);
+  font-size: 20px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: calc(var(--space) * 1.5);
+  flex-wrap: wrap;
+}
+.gj-dialog__body {
+  padding: calc(var(--space) * 2.5);
+}
+.gj-dialog__body video {
+  width: 100%;
+  border-radius: 12px;
+  background: var(--gajju-ink);
+}
+
+/* ---------- Reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .gj-btn,
+  .gj-tool {
+    transition: none;
+  }
+  .gj-spinner {
+    animation-duration: 2.4s;
+  }
+}

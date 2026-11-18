@@ -1,10 +1,8 @@
 import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import Layout from './components/Layout.jsx';
-import Home from './pages/Home.jsx';
-import Shop from './pages/Shop.jsx';
-import Product from './pages/Product.jsx';
-import Cart from './pages/Cart.jsx';
-import Checkout from './pages/Checkout.jsx';
+// Pages are lazy (one chunk each); Layout wraps them in <Suspense>.
+import { Home, Shop, Product, Cart, Checkout, GajjuMini, BuildLog, Schools, Parents, About, Founding, Privacy, Terms } from './routes.js';
+import { SHOP_ENABLED, PHASE2_ENABLED } from './config/features.js';
 
 /** Remount the product page per id so its 3D viewer and reveals start fresh. */
 function ProductRoute() {
@@ -23,22 +21,37 @@ function LegacyRedirect({ to }) {
   return <Navigate to={`${to}${search}${hash}`} replace />;
 }
 
+const toHome = <Navigate to="/" replace />;
+
 export default function App() {
   return (
     <Routes>
       <Route element={<Layout />}>
         <Route index element={<Home />} />
-        <Route path="shop" element={<Shop />} />
-        <Route path="product/:id" element={<ProductRoute />} />
-        <Route path="cart" element={<Cart />} />
-        <Route path="checkout" element={<Checkout />} />
+        <Route path="gajju-mini" element={<GajjuMini />} />
+        <Route path="build-log" element={<BuildLog />} />
+        {/* Phase 2 (For schools, For parents): hidden unless VITE_ENABLE_PHASE2=true
+            (config/features.js). While hidden, both addresses redirect to Home. */}
+        <Route path="schools" element={PHASE2_ENABLED ? <Schools /> : toHome} />
+        <Route path="parents" element={PHASE2_ENABLED ? <Parents /> : toHome} />
+        <Route path="about" element={<About />} />
+        <Route path="founding" element={<Founding />} />
+        <Route path="privacy" element={<Privacy />} />
+        <Route path="terms" element={<Terms />} />
+
+        {/* Phase 4 shop: off unless VITE_ENABLE_SHOP=true (config/features.js). While off, every
+            shop address, old or new, redirects to Home. */}
+        <Route path="shop" element={SHOP_ENABLED ? <Shop /> : toHome} />
+        <Route path="product/:id" element={SHOP_ENABLED ? <ProductRoute /> : toHome} />
+        <Route path="cart" element={SHOP_ENABLED ? <Cart /> : toHome} />
+        <Route path="checkout" element={SHOP_ENABLED ? <Checkout /> : toHome} />
 
         <Route path="index.html" element={<LegacyRedirect to="/" />} />
-        <Route path="shop.html" element={<LegacyRedirect to="/shop" />} />
-        <Route path="product.html" element={<LegacyRedirect to="product" />} />
-        <Route path="cart.html" element={<LegacyRedirect to="/cart" />} />
-        <Route path="checkout.html" element={<LegacyRedirect to="/checkout" />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="shop.html" element={SHOP_ENABLED ? <LegacyRedirect to="/shop" /> : toHome} />
+        <Route path="product.html" element={SHOP_ENABLED ? <LegacyRedirect to="product" /> : toHome} />
+        <Route path="cart.html" element={SHOP_ENABLED ? <LegacyRedirect to="/cart" /> : toHome} />
+        <Route path="checkout.html" element={SHOP_ENABLED ? <LegacyRedirect to="/checkout" /> : toHome} />
+        <Route path="*" element={toHome} />
       </Route>
     </Routes>
   );

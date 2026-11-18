@@ -1,23 +1,25 @@
-export default function Logo() {
+// Gajju logo (symbol + "Gajju"): DOC-brand-logo-files-v1, files in public/brand/logo/.
+//   full-colour → Cream or Paper backgrounds (the main version)
+//   reverse     → Ink or other dark backgrounds (Paper head, Saffron ears)
+// Rules from the logo doc: clear space on every side = the height of the "G"; smallest size
+// 24 px high on screen; never stretch, recolour or add effects. The SVGs are vector, with the
+// wordmark already outlined, so no font is needed.
+const SRC = {
+  'full-colour': '/brand/logo/svg/gajju-logo-full-colour.svg',
+  reverse: '/brand/logo/svg/gajju-logo-reverse.svg',
+};
+// The logo SVGs are 1533.44 × 412: width and height let the browser reserve the space.
+const RATIO = 1533.44 / 412;
+
+export default function Logo({ variant = 'full-colour', height = 32, className = '' }) {
   return (
-    <svg className="logo-mark" viewBox="0 0 40 40" aria-hidden="true">
-      <path
-        className="logo-mark__frame"
-        d="M20 2.5 35.2 11.25v17.5L20 37.5 4.8 28.75v-17.5Z"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-      />
-      <path
-        className="logo-mark__n"
-        d="M25.5 15.2A7 7 0 1 0 27 20.5H20.5"
-        fill="none"
-        style={{ stroke: 'var(--cyan)' }}
-        strokeWidth="2.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <circle className="logo-mark__dot" cx="27" cy="13" r="2.2" style={{ fill: 'var(--cyan)' }} />
-    </svg>
+    <img
+      className={`gj-logo ${className}`.trim()}
+      src={SRC[variant]}
+      alt="Gajju"
+      width={Math.round(height * RATIO)}
+      height={height}
+      decoding="async"
+    />
   );
 }

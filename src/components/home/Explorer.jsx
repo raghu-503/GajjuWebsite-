@@ -3,7 +3,6 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Icon from '../Icon.jsx';
 import SplitText from '../SplitText.jsx';
 import { useWhenNear } from '../../hooks/useWhenNear.js';
-import { createExplorer } from '../../js/robot-explorer.js';
 import { gsap, reduced } from '../../js/animations.js';
 
 const EMPTY = {
@@ -34,17 +33,29 @@ export default function Explorer() {
   useEffect(() => {
     if (!near) return;
     setStatus('loading');
-    api.current = createExplorer(stageRef.current, {
-      tip: tipRef.current,
-      onReady: (g) => {
-        setGroups(g);
-        setStatus(null);
+    let alive = true;
+    // The 3D controller (and Three.js) loads only when the section comes near the viewport.
+    import('../../js/robot-explorer.js').then(
+      ({ createExplorer }) => {
+        if (!alive) return;
+        api.current = createExplorer(stageRef.current, {
+          tip: tipRef.current,
+          onReady: (g) => {
+            setGroups(g);
+            setStatus(null);
+          },
+          onError: (error) => setStatus({ error }),
+          onSelect: (sel) => setInfo(sel ? { ...sel, key: Math.random() } : CLEARED),
+          onHover: setHoverGroup,
+        });
       },
-      onError: (error) => setStatus({ error }),
-      onSelect: (sel) => setInfo(sel ? { ...sel, key: Math.random() } : CLEARED),
-      onHover: setHoverGroup,
-    });
+      (err) => {
+        console.error(err);
+        if (alive) setStatus({ error: 'The 3D view could not be loaded. Check your connection and reload the page.' });
+      },
+    );
     return () => {
+      alive = false;
       api.current?.destroy();
       api.current = null;
     };

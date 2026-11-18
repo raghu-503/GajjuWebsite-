@@ -1,7 +1,7 @@
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Lenis from 'lenis';
-import { prefersReducedMotion } from './stage.js';
+import { prefersReducedMotion } from './env.js'; // not stage.js: that would pull Three.js into every page
 
 gsap.registerPlugin(ScrollTrigger);
 export { gsap, ScrollTrigger };
@@ -50,31 +50,39 @@ export function scrollToTop(lenis, immediate = false) {
 }
 
 /* ------------------------------ Loader ------------------------------ */
-export function runLoader(loader, { full }) {
+/** Loader messages, one per quarter of the bar. Plain and friendly (brand guidelines: "never
+ *  cold or sci-fi"); they describe the page getting ready, nothing more. */
+export const LOADER_STEPS = ['Getting Gajju ready', 'Getting Gajju ready', 'Almost ready', 'Ready'];
+/** `ready` (optional promise): the loader doesn't leave before it settles, e.g. the first page's code. */
+export function runLoader(loader, { full, ready }) {
   const bar = loader.querySelector('[data-loader-bar]');
   const label = loader.querySelector('[data-loader-label]');
 
   return new Promise((resolve) => {
-    const finish = () => {
-      gsap.to(loader, {
-        yPercent: -100,
-        duration: full ? 0.9 : 0.45,
-        ease: 'power4.inOut',
-        onComplete: () => {
-          loader.style.display = 'none';
-          resolve();
-        },
+    const finish = () =>
+      Promise.resolve(ready).finally(() => {
+        gsap.to(loader, {
+          yPercent: -100,
+          duration: full ? 0.9 : 0.45,
+          ease: 'power4.inOut',
+          onComplete: () => {
+            loader.style.display = 'none';
+            resolve();
+          },
+        });
       });
-    };
     if (!full) {
       loader.classList.add('is-quick');
       requestAnimationFrame(() => setTimeout(finish, 80));
       return;
     }
-    const steps = ['Initialising systems', 'Calibrating sensors', 'Loading 3D models', 'Ready'];
+    const steps = LOADER_STEPS;
     const state = { p: 0 };
-    gsap.fromTo(loader.querySelector('.logo-mark__frame'), { strokeDasharray: 120, strokeDashoffset: 120 }, { strokeDashoffset: 0, duration: 1.1, ease: 'power2.inOut' });
-    gsap.fromTo(loader.querySelector('.logo-mark__n'), { strokeDasharray: 60, strokeDashoffset: 60 }, { strokeDashoffset: 0, duration: 0.9, delay: 0.4, ease: 'power2.out' });
+    // Draw the logo mark if there is one (the interim wordmark is plain text, so this is skipped).
+    const frame = loader.querySelector('.logo-mark__frame');
+    const mark = loader.querySelector('.logo-mark__n');
+    if (frame) gsap.fromTo(frame, { strokeDasharray: 120, strokeDashoffset: 120 }, { strokeDashoffset: 0, duration: 1.1, ease: 'power2.inOut' });
+    if (mark) gsap.fromTo(mark, { strokeDasharray: 60, strokeDashoffset: 60 }, { strokeDashoffset: 0, duration: 0.9, delay: 0.4, ease: 'power2.out' });
     gsap.to(state, {
       p: 100,
       duration: 1.7,

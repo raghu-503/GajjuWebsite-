@@ -1,16 +1,19 @@
 // App shell shared by every route: loader, curtain, cursor, header, panels, toasts and footer.
 // Also owns smooth scrolling (Lenis), page transitions and the panel/keyboard behaviour.
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import Logo from './Logo.jsx';
 import Header, { useActiveSection } from './layout/Header.jsx';
 import MobileMenu from './layout/MobileMenu.jsx';
+import { SHOP_PAGES } from './layout/NAV_LINKS.js';
+import { SHOP_ENABLED } from '../config/features.js';
 import CartDrawer from './layout/CartDrawer.jsx';
 import SearchPanel from './layout/SearchPanel.jsx';
 import AccountPanel from './layout/AccountPanel.jsx';
 import Toasts from './layout/Toasts.jsx';
 import Footer from './layout/Footer.jsx';
 import { SiteContext } from '../context/SiteContext.jsx';
+import { preloadPath } from '../routes.js';
 import { initTheme } from '../js/theme.js';
 import { getProduct } from '../js/data.js';
 import { toast } from '../js/toast.js';
@@ -24,6 +27,7 @@ import {
   cursorEnabled,
   scrollToTarget,
   scrollToTop,
+  LOADER_STEPS,
 } from '../js/animations.js';
 
 const pageOf = (pathname) => (pathname === '/' ? 'home' : pathname.split('/')[1] || 'home');
@@ -78,7 +82,8 @@ export default function Layout() {
     loaderStarted.current = true;
     const full = page === 'home' && !session.get('nx-loaded') && !reduced;
     session.set('nx-loaded', '1');
-    runLoader(loaderRef.current, { full }).then(() => {
+    // The loader stays up until the first page's code has arrived (pages are loaded on demand).
+    runLoader(loaderRef.current, { full, ready: preloadPath(location.pathname) }).then(() => {
       setLoaded(true);
       if (window.location.hash) setTimeout(() => scrollToTarget(lenisRef.current, window.location.hash), 50);
       ScrollTrigger.refresh();
@@ -126,12 +131,19 @@ export default function Layout() {
     return () => clearTimeout(id);
   }, [panel, lenis]);
 
-  // Escape closes, "/" opens search, Tab stays inside the open panel.
+  // Escape closes, "/" opens search (shop routes only, where search lives), Tab stays inside the open panel.
+  const pageRef = useRef(page);
+  pageRef.current = page;
   useEffect(() => {
     const onKey = (e) => {
       const open = panelRef.current;
       if (e.key === 'Escape') closePanels();
-      if (e.key === '/' && !open && !/input|textarea|select/i.test(document.activeElement?.tagName || '')) {
+      if (
+        e.key === '/' &&
+        !open &&
+        SHOP_PAGES.includes(pageRef.current) &&
+        !/input|textarea|select/i.test(document.activeElement?.tagName || '')
+      ) {
         e.preventDefault();
         openPanel('search');
       }
@@ -165,6 +177,7 @@ export default function Layout() {
     (to) => {
       const url = new URL(to, window.location.href);
       const path = url.pathname + url.search + url.hash;
+      preloadPath(url.pathname); // load the next page while the curtain covers the screen
       const here = window.location;
       if (url.pathname === here.pathname && url.search === here.search) {
         // Same page: scroll to the anchor (or the top) instead of reloading.
@@ -210,8 +223,21 @@ export default function Layout() {
       e.preventDefault();
       go(url.pathname + url.search + url.hash);
     };
+    // Start loading a page's code as soon as a link to it is pointed at or focused.
+    const onIntent = (e) => {
+      const a = e.target.closest?.('a[href]');
+      if (!a) return;
+      const url = new URL(a.href, window.location.href);
+      if (url.origin === window.location.origin) preloadPath(url.pathname);
+    };
     document.addEventListener('click', onClick, true);
-    return () => document.removeEventListener('click', onClick, true);
+    document.addEventListener('pointerover', onIntent, { passive: true });
+    document.addEventListener('focusin', onIntent);
+    return () => {
+      document.removeEventListener('click', onClick, true);
+      document.removeEventListener('pointerover', onIntent);
+      document.removeEventListener('focusin', onIntent);
+    };
   }, [go]);
 
   // After each navigation: reset scroll, reveal the new page, honour #hash.
@@ -257,12 +283,12 @@ export default function Layout() {
       </a>
       <div className="loader" aria-hidden="true" ref={loaderRef}>
         <div className="loader__inner">
-          <Logo />
+          <Logo height={48} />
           <div className="loader__bar">
             <span data-loader-bar />
           </div>
           <p className="loader__label" data-loader-label>
-            Initialising systems
+            {LOADER_STEPS[0]}
           </p>
         </div>
       </div>
@@ -277,12 +303,21 @@ export default function Layout() {
       <Header active={active} />
       <MobileMenu active={active} />
       <div className={`scrim${panel && panel !== 'menu' ? ' is-open' : ''}`} onClick={() => closePanels()} />
-      <CartDrawer />
-      <SearchPanel />
-      <AccountPanel />
+      {/* Phase 4 shop panels: only while the shop is on (config/features.js). */}
+      {SHOP_ENABLED && (
+        <>
+          <CartDrawer />
+          <SearchPanel />
+          <AccountPanel />
+        </>
+      )}
       <Toasts />
 
-      <Outlet />
+      {/* Shown only on the first load, under the loader. Later navigations are transitions, so the
+          current page stays on screen (under the curtain) until the next page's code is ready. */}
+      <Suspense fallback={<main id="main" aria-busy="true" style={{ minHeight: '100vh' }} />}>
+        <Outlet />
+      </Suspense>
 
       <Footer />
     </SiteContext.Provider>

@@ -9,14 +9,16 @@ import {
   loadGajjuAsset,
   createGajju,
   addGajjuStudio,
+  addBrandStudio,
   frameCamera,
   GROUPS,
 } from "./gajju-model.js";
 import { gsap } from "./animations.js";
+import { plainPart, PLAIN_GROUPS } from "../content/robot-parts.js"; // brand mode: plain-English names
 
 export const GROUP_DESC = {
   torso:
-    "The aluminium-look torso shell: body, deck, hump cap, clamps, battery door, tail plug and speaker ring.",
+    "The torso shell: body, deck, hump cap, clamps, battery door, tail plug and speaker ring.",
   electronics:
     "Battery, power conversion, servo driver, Raspberry Pi Zero 2 W, ESP32, IMU and audio, all inside the torso.",
   "leg-FL":
@@ -43,7 +45,11 @@ const pad = (n, l = 3) => String(n).padStart(l, "0");
  *   onSelect(info|null)   { idx, name, desc, group } for the panel
  *   onHover(groupId|null) group highlighted from the 3D view or the list
  */
-export function createExplorer(host, cb = {}) {
+/**
+ * opts.brand: Gajju brand look (Cream studio, brand colours, Teal highlights) and friendly
+ * part info: the part's plain-English label and its group's description, never the CAD name.
+ */
+export function createExplorer(host, cb = {}, { brand = false } = {}) {
   const { tip, onReady = () => {}, onError = () => {}, onSelect = () => {}, onHover = () => {} } = cb;
   const reduced = prefersReducedMotion();
   const dur = (d) => (reduced ? 0.01 : d);
@@ -60,7 +66,8 @@ export function createExplorer(host, cb = {}) {
     return null;
   }
   const { scene, camera, canvas, renderer, mobile } = stage;
-  const studio = addGajjuStudio(scene, { renderer, mobile, radius: 2.2 });
+  const studio = brand ? addBrandStudio(scene, { renderer }) : addGajjuStudio(scene, { renderer, mobile, radius: 2.2 });
+  const HIGHLIGHT = brand ? { selected: 0x1f6f78, hover: 0x1f6f78 } : { selected: 0x3de8ff, hover: 0x2f6bff };
 
   const controls = new OrbitControls(camera, canvas);
   controls.enableDamping = true;
@@ -106,7 +113,7 @@ export function createExplorer(host, cb = {}) {
   loadGajjuAsset().then(
     (asset) => {
       if (destroyed) return;
-      robot = createGajju(asset, { shadows: true });
+      robot = createGajju(asset, { shadows: true, palette: brand ? "brand" : "studio" });
       scene.add(robot.group);
       home = frameCamera(camera, robot.bounds, { fill: 0.8 });
       controls.minDistance = home.distance * 0.25;
@@ -116,7 +123,9 @@ export function createExplorer(host, cb = {}) {
       controls.update();
       const counts = {};
       robot.parts.forEach((p) => (counts[p.group] = (counts[p.group] || 0) + 1));
-      onReady(Object.keys(GROUPS).map((g) => ({ id: g, label: GROUPS[g].label, count: counts[g] || 0 })));
+      onReady(
+        Object.keys(GROUPS).map((g) => ({ id: g, label: brand ? PLAIN_GROUPS[g].label : GROUPS[g].label, count: counts[g] || 0 })),
+      );
     },
     (err) => {
       if (destroyed) return;
@@ -135,8 +144,8 @@ export function createExplorer(host, cb = {}) {
       hovered?.type === "part" ? [hovered.part] : hovered?.type === "group" ? groupParts(hovered.group) : [],
     );
     robot.parts.forEach((p) => {
-      if (selSet.has(p)) setHighlight(p.object, true, 0x3de8ff, 0.7);
-      else if (hovSet.has(p)) setHighlight(p.object, true, 0x2f6bff, 0.35);
+      if (selSet.has(p)) setHighlight(p.object, true, HIGHLIGHT.selected, brand ? 0.55 : 0.7);
+      else if (hovSet.has(p)) setHighlight(p.object, true, HIGHLIGHT.hover, brand ? 0.25 : 0.35);
       else setHighlight(p.object, false);
     });
     onHover(hovered?.type === "group" ? hovered.group : null);
@@ -160,7 +169,15 @@ export function createExplorer(host, cb = {}) {
     selected = sel;
     paint();
     if (!sel) return onSelect(null);
-    if (sel.type === "part") {
+    if (sel.type === "part" && brand) {
+      const p = sel.part;
+      const plain = plainPart(p.name);
+      const g = PLAIN_GROUPS[p.group];
+      onSelect({ idx: `Part of: ${g.label}`, name: plain.name, desc: g.desc, tbc: plain.tbc, group: p.group, part: true });
+    } else if (sel.type === "group" && brand) {
+      const g = PLAIN_GROUPS[sel.group];
+      onSelect({ idx: `${groupParts(sel.group).length} parts in the 3D model`, name: g.label, desc: g.desc, group: sel.group });
+    } else if (sel.type === "part") {
       const p = sel.part;
       onSelect({
         idx: `${pad(p.index)} / ${pad(robot.parts.length)} · ${p.groupLabel}`,
@@ -207,7 +224,7 @@ export function createExplorer(host, cb = {}) {
       if (p) {
         const r = host.getBoundingClientRect();
         tip.hidden = false;
-        tip.textContent = p.cadName;
+        tip.textContent = brand ? plainPart(p.name).name : p.cadName;
         tip.style.transform = `translate(${e.clientX - r.left + 16}px, ${e.clientY - r.top + 12}px)`;
       } else tip.hidden = true;
     });

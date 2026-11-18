@@ -1,0 +1,321 @@
+/* ==========================================================================
+   Gajju brand: shared site header, mobile menu and footer (every route).
+   Uses the --gajju-* tokens and .gj-btn from gajju-home.css. Only the new gj-header,
+   gj-mnav and gj-footer classes are styled here, so page content on the shop, product,
+   cart and checkout routes keeps its current look. The old .nav/.mnav/.footer rules in
+   navigation.css are left in place (no longer used by these components).
+   ========================================================================== */
+
+/* Logo (DOC-brand-logo-files-v1): never below 24 px high; clear space = height of the "G". */
+.gj-logo {
+  display: block;
+  width: auto;
+  max-width: 100%;
+}
+.gj-header .gj-logo {
+  height: 30px;
+}
+@media (min-width: 640px) {
+  .gj-header .gj-logo {
+    height: 34px;
+  }
+}
+.gj-footer .gj-logo {
+  height: 40px;
+}
+
+/* ---------- Header ---------- */
+.gj-header {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 100;
+  height: var(--nav-h);
+  padding-top: env(safe-area-inset-top, 0px);
+  background: var(--gajju-paper);
+  border-bottom: 1px solid transparent;
+  font-family: var(--font-body);
+  color: var(--gajju-ink);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.gj-header.is-scrolled,
+.gj-header.is-menu {
+  border-bottom-color: var(--gajju-sand);
+}
+.gj-header__inner {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--space) * 3);
+  height: 100%;
+  max-width: calc(var(--gj-max) + 2 * var(--gj-gutter));
+  margin-inline: auto;
+  padding-inline: var(--gj-gutter);
+}
+.gj-header__brand {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  flex: none;
+}
+.gj-header__nav {
+  display: none;
+  margin-inline: auto;
+}
+.gj-header__nav ul {
+  display: flex;
+  gap: 4px;
+}
+.gj-header__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: var(--radius-button);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--gajju-ink);
+  transition: background-color 0.2s ease;
+}
+.gj-header__link:hover {
+  background: var(--gajju-cream);
+}
+.gj-header__link.is-active {
+  background: var(--gajju-peach);
+  color: var(--gajju-ink);
+}
+.gj-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+.gj-header__cta {
+  display: none;
+  min-height: 44px;
+  margin-left: var(--space);
+}
+.gj-icon-btn {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  color: var(--gajju-ink);
+  transition: background-color 0.2s ease;
+}
+.gj-icon-btn:hover {
+  background: var(--gajju-cream);
+}
+.gj-icon-btn svg {
+  width: 22px;
+  height: 22px;
+}
+.gj-header__cart .cart-count {
+  position: absolute;
+  top: 2px;
+  right: 0;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: var(--gajju-saffron);
+  color: var(--gajju-ink);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+.gj-header__cart .cart-count.is-empty {
+  background: var(--gajju-sand);
+}
+.gj-header :focus-visible,
+.gj-mnav :focus-visible,
+.gj-footer :focus-visible {
+  outline: 3px solid var(--gajju-teal);
+  outline-offset: 2px;
+  border-radius: 10px;
+}
+@media (max-width: 479px) {
+  .gj-header__account {
+    display: none; /* still reachable from the cart and checkout pages */
+  }
+}
+@media (min-width: 1100px) {
+  .gj-header__nav,
+  .gj-header__cta {
+    display: flex;
+  }
+  .gj-header__burger {
+    display: none;
+  }
+  .gj-header__actions {
+    margin-left: 0; /* the centred nav takes the free space */
+  }
+}
+
+/* ---------- Mobile and tablet menu ---------- */
+.gj-mnav {
+  position: fixed;
+  inset: var(--nav-h) 0 0;
+  z-index: 90;
+  display: grid;
+  align-content: start;
+  gap: calc(var(--space) * 4);
+  padding: calc(var(--space) * 3) var(--gj-gutter) calc(var(--space) * 4 + env(safe-area-inset-bottom, 0px));
+  overflow-y: auto;
+  background: var(--gajju-paper);
+  font-family: var(--font-body);
+  color: var(--gajju-ink);
+  animation: gj-mnav-in 0.25s ease-out;
+}
+.gj-mnav[hidden] {
+  display: none;
+}
+@keyframes gj-mnav-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+.gj-mnav__links {
+  display: grid;
+}
+.gj-mnav__link {
+  display: flex;
+  align-items: center;
+  min-height: 56px;
+  border-bottom: 1px solid var(--gajju-sand);
+  font-family: var(--font-heading);
+  font-size: 24px;
+  font-weight: 500;
+  color: var(--gajju-ink);
+}
+.gj-mnav__link.is-active {
+  color: var(--gajju-saffron-deep);
+}
+.gj-mnav__cta {
+  justify-self: start;
+}
+@media (min-width: 1100px) {
+  .gj-mnav {
+    display: none; /* the full navigation is in the header */
+  }
+}
+
+/* ---------- Footer: the brand's dark band ---------- */
+.gj-footer {
+  margin-top: 0;
+  padding: calc(var(--space) * 8) 0 calc(var(--space) * 4 + env(safe-area-inset-bottom, 0px));
+  background: var(--gajju-ink);
+  color: var(--gajju-paper);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+}
+/* Same gap above the footer as before on the shop routes (the brand pages end with a section). */
+body[data-page='shop'] .gj-footer,
+body[data-page='product'] .gj-footer,
+body[data-page='cart'] .gj-footer,
+body[data-page='checkout'] .gj-footer {
+  margin-top: clamp(4rem, 8vw, 8rem);
+}
+.gj-footer__inner,
+.gj-footer__bottom {
+  max-width: calc(var(--gj-max) + 2 * var(--gj-gutter));
+  margin-inline: auto;
+  padding-inline: var(--gj-gutter);
+}
+.gj-footer__inner {
+  display: grid;
+  gap: calc(var(--space) * 5);
+}
+@media (min-width: 640px) {
+  .gj-footer__inner {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .gj-footer__brand {
+    grid-column: 1 / -1;
+  }
+}
+@media (min-width: 1024px) {
+  .gj-footer__inner {
+    grid-template-columns: minmax(0, 1.6fr) repeat(2, minmax(0, 1fr));
+    gap: calc(var(--space) * 6);
+  }
+  .gj-footer__brand {
+    grid-column: auto;
+  }
+}
+.gj-footer__brand {
+  display: grid;
+  gap: calc(var(--space) * 2.5);
+  justify-items: start;
+  align-content: start;
+}
+.gj-footer__brand p {
+  max-width: 46ch;
+  color: rgb(255 252 246 / 0.86);
+}
+.gj-footer__logo {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+}
+.gj-footer__col h2 {
+  margin-bottom: calc(var(--space) * 1.5);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gajju-saffron); /* Saffron on Ink: 6.3:1 */
+}
+.gj-footer__col ul {
+  display: grid;
+  gap: 4px;
+}
+.gj-footer__col a,
+.gj-footer__unavailable {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space);
+  min-height: 40px;
+  color: var(--gajju-paper);
+}
+.gj-footer a:not(.gj-btn) {
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 4px;
+}
+.gj-footer a:not(.gj-btn):hover {
+  text-decoration-color: var(--gajju-saffron);
+}
+.gj-footer__unavailable {
+  color: rgb(255 252 246 / 0.7);
+}
+.gj-footer__bottom {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space) calc(var(--space) * 3);
+  margin-top: calc(var(--space) * 6);
+  padding-top: calc(var(--space) * 3);
+  border-top: 1px solid rgb(255 252 246 / 0.16);
+  font-size: 14px;
+  color: rgb(255 252 246 / 0.78);
+}
+.gj-footer__bottom p {
+  max-width: 70ch;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gj-mnav {
+    animation: none;
+  }
+  .gj-header,
+  .gj-header__link,
+  .gj-icon-btn {
+    transition: none;
+  }
+}

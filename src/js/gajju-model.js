@@ -372,6 +372,28 @@ const PARTS = [
 ];
 
 /* ------------------------------ Materials ------------------------------ */
+// Brand renders (Gajju brand guidelines): Elephant Grey body, Saffron ears and back (hump cap),
+// Slate for the darker panels. Electronics, screws, rubber and glass keep their real-world look.
+const BRAND_COLOURS = { saffron: 0xf08a24, elephantGrey: 0x8a9099, slate: 0x565b66, ink: 0x1c2230 };
+const BRAND_SAFFRON_PARTS = /^(Ear, (left|right)|Hump cap)$/;
+
+function brandMaterial(kind, label) {
+  const plastic = (color, roughness = 0.62) =>
+    new THREE.MeshStandardMaterial({ color, metalness: 0, roughness, envMapIntensity: 0.6 });
+  if (BRAND_SAFFRON_PARTS.test(label)) return plastic(BRAND_COLOURS.saffron, 0.55);
+  switch (kind) {
+    case "aluminium":
+    case "silver":
+      return plastic(BRAND_COLOURS.elephantGrey);
+    case "graphite":
+      return plastic(BRAND_COLOURS.slate, 0.68);
+    case "eye": // dark lens, no glow
+      return new THREE.MeshStandardMaterial({ color: BRAND_COLOURS.ink, metalness: 0.3, roughness: 0.25 });
+    default:
+      return makeMaterial(kind);
+  }
+}
+
 function makeMaterial(kind) {
   switch (kind) {
     case "aluminium":
@@ -593,7 +615,8 @@ async function prepare(gltf) {
  * materials are per mesh so a single part can be highlighted or faded.
  * Returns the same { group, parts, animate } contract as the procedural robots.
  */
-export function createGajju(asset, { shadows = false, rig = false } = {}) {
+/** palette: "studio" (default, the existing look) or "brand" (Gajju brand colours). */
+export function createGajju(asset, { shadows = false, rig = false, palette = "studio" } = {}) {
   const group = new THREE.Group();
   group.name = "GAJJU";
   const orient = new THREE.Group(); // turn the robot so its face points at +Z (toward the default camera)
@@ -605,7 +628,7 @@ export function createGajju(asset, { shadows = false, rig = false } = {}) {
 
   const meshes = asset.map(({ nodeName, geometry, matrix, meta }, i) => {
     const [cadName, label, kind, groupId, mat] = meta;
-    const mesh = new THREE.Mesh(geometry, makeMaterial(mat));
+    const mesh = new THREE.Mesh(geometry, palette === "brand" ? brandMaterial(mat, label) : makeMaterial(mat));
     mesh.applyMatrix4(matrix);
     mesh.name = cadName || nodeName;
     mesh.castShadow = shadows;
@@ -932,6 +955,46 @@ export const STUDIO_NAVY = 0x08111d;
  * (desktop) real reflections and soft shadows, and a subtle illuminated ring platform.
  * `renderer` is optional (snapshots pass none and get no shadows/reflection).
  */
+/**
+ * Brand studio for the Home page: transparent background (the page's Cream/Paper shows through),
+ * neutral warm daylight, a soft contact shadow and no glow, rings or reflections.
+ */
+export function addBrandStudio(scene, { renderer = null, shadows = !!renderer } = {}) {
+  scene.userData.fixedTheme = true;
+  scene.background = null;
+  scene.fog = null;
+  scene.add(new THREE.HemisphereLight(0xfffcf6, 0xdccfbb, 1.1));
+  const key = new THREE.DirectionalLight(0xfff6ea, 2.4);
+  key.position.set(4, 7, 5);
+  scene.add(key, key.target);
+  const fill = new THREE.DirectionalLight(0xffffff, 0.8);
+  fill.position.set(-5, 3, 3);
+  scene.add(fill);
+  const rim = new THREE.DirectionalLight(0xffffff, 1.0);
+  rim.position.set(-2, 4, -5);
+  scene.add(rim);
+  if (renderer && shadows) {
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    key.castShadow = true;
+    key.shadow.mapSize.set(1024, 1024);
+    const s = key.shadow.camera;
+    s.left = s.bottom = -3;
+    s.right = s.top = 3;
+    s.near = 1;
+    s.far = 20;
+    key.shadow.bias = -0.0004;
+    key.shadow.normalBias = 0.02;
+    key.shadow.radius = 5;
+  }
+  const shadow = new THREE.Mesh(new THREE.CircleGeometry(4, 64), new THREE.ShadowMaterial({ opacity: 0.18 }));
+  shadow.rotation.x = -Math.PI / 2;
+  shadow.position.y = 0.002;
+  shadow.receiveShadow = true;
+  scene.add(shadow);
+  return { key, update() {}, dispose() {} };
+}
+
 export function addGajjuStudio(
   scene,
   {

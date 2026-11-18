@@ -1,9 +1,44 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { getTheme, sceneColors, onThemeChange } from './theme.js';
+import { isMobile, prefersReducedMotion } from './env.js';
 
-export const isMobile = () => window.matchMedia('(max-width: 768px), (pointer: coarse)').matches;
-export const prefersReducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+export { isMobile, prefersReducedMotion };
+
+/** Studio reflections for a renderer. Returns the render target; the caller disposes it. */
+function roomEnvironment(renderer) {
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  const room = new RoomEnvironment();
+  const target = pmrem.fromScene(room, 0.04);
+  room.dispose();
+  pmrem.dispose();
+  return target;
+}
+
+/**
+ * Frees the GPU resources a scene holds: geometries (except the shared CAD geometry, which is
+ * loaded once and reused by every view), materials, their textures and Reflector render targets.
+ */
+export function disposeScene(scene) {
+  const textures = new Set();
+  const materials = new Set();
+  scene.traverse((o) => {
+    if (o.isReflector) {
+      o.dispose(); // its render target and material
+      o.geometry?.dispose();
+      return;
+    }
+    if (o.geometry && !o.geometry.userData.shared) o.geometry.dispose();
+    if (o.material) [].concat(o.material).forEach((m) => materials.add(m));
+  });
+  materials.forEach((m) => {
+    Object.values(m).forEach((v) => v?.isTexture && textures.add(v));
+    if (m.uniforms) Object.values(m.uniforms).forEach((u) => u?.value?.isTexture && textures.add(u.value));
+    m.dispose();
+  });
+  if (scene.background?.isTexture) textures.add(scene.background);
+  textures.forEach((t) => t.dispose());
+}
 
 // Checked once per page; the probe context is released straight away so it doesn't count
 // against the browser's WebGL context limit.
@@ -35,8 +70,6 @@ export function showFallback(container, label = 'Interactive 3D needs WebGL. Sho
       <p>${label}</p>
     </div>`;
 }
-
-let sharedEnvTexture = null;
 
 /**
  * Creates a self-managing Three.js stage inside `container`.
@@ -74,10 +107,9 @@ export function createStage(container, opts = {}) {
   container.appendChild(canvas);
 
   const scene = new THREE.Scene();
-  const pmrem = new THREE.PMREMGenerator(renderer);
-  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+  const envTarget = roomEnvironment(renderer);
+  scene.environment = envTarget.texture;
   scene.environmentIntensity = envIntensity;
-  pmrem.dispose();
 
   const camera = new THREE.PerspectiveCamera(fov, 1, 0.1, 120);
   camera.position.set(...position);
@@ -86,6 +118,7 @@ export function createStage(container, opts = {}) {
 
   const tickers = new Set();
   const clock = new THREE.Clock();
+  let disposed = false;
   let visible = false;
   let running = false;
   let elapsed = 0;
@@ -154,12 +187,16 @@ export function createStage(container, opts = {}) {
       renderer.render(scene, camera);
     },
     dispose() {
+      if (disposed) return;
+      disposed = true;
       ro.disconnect();
       io.disconnect();
       document.removeEventListener('visibilitychange', onVis);
       offTheme();
       tickers.clear();
       visible = false;
+      disposeScene(scene);
+      envTarget.dispose();
       renderer.dispose();
       renderer.forceContextLoss(); // free the WebGL context (browsers cap how many can be live)
       canvas.remove();
@@ -259,10 +296,9 @@ export function renderSnapshots(key, buildScene, shots, size = 720, indices = nu
   }
   snapRenderer.setSize(size, size, false);
   const scene = new THREE.Scene();
-  const pmrem = new THREE.PMREMGenerator(snapRenderer);
-  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+  const envTarget = roomEnvironment(snapRenderer);
+  scene.environment = envTarget.texture;
   scene.environmentIntensity = 0.9;
-  pmrem.dispose();
   scene.background = new THREE.Color(sceneColors().snapBg);
   const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
   const ctx = buildScene(scene);
@@ -276,10 +312,8 @@ export function renderSnapshots(key, buildScene, shots, size = 720, indices = nu
     urls[i] = snapRenderer.domElement.toDataURL('image/jpeg', 0.86);
     snapOwner.set(urls[i], { key, index: i });
   }
-  scene.traverse((o) => {
-    if (o.geometry && !o.geometry.userData.shared) o.geometry.dispose(); // shared CAD geometry stays alive
-    if (o.material) [].concat(o.material).forEach((m) => m.dispose());
-  });
+  disposeScene(scene); // shared CAD geometry stays alive
+  envTarget.dispose(); // was leaked once per snapshot batch
   return urls;
 }
 
